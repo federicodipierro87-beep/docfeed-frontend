@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EditDocumentDialog } from '@/components/documents/EditDocumentDialog'
+import { DeleteDocumentDialog } from '@/components/documents/DeleteDocumentDialog'
 import { documentsApi } from '@/lib/api'
 import { formatBytes, formatDateTime, getMimeTypeLabel } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -28,6 +29,7 @@ export default function DocumentDetailPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -296,9 +298,19 @@ export default function DocumentDetailPage() {
               vaultId: document.vaultId,
             } : null}
           />
-          <Button variant="outline" size="sm" className="text-destructive">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
+          <DeleteDocumentDialog
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            document={document ? { id: document.id, name: document.name } : null}
+          />
         </div>
       </div>
 
