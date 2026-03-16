@@ -41,7 +41,8 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { metadataApi, attributesApi } from '@/lib/api'
+import { Switch } from '@/components/ui/switch'
+import { metadataApi, attributesApi, usersApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 
 const FIELD_TYPES: Record<string, string> = {
@@ -51,6 +52,21 @@ const FIELD_TYPES: Record<string, string> = {
   BOOLEAN: 'Sì/No',
   SELECT: 'Selezione',
   MULTISELECT: 'Multi-selezione',
+}
+
+const ROLES = [
+  { value: 'ADMIN', label: 'Amministratore' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'USER', label: 'Utente' },
+  { value: 'READONLY', label: 'Sola Lettura' },
+]
+
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
 }
 
 interface Attribute {
@@ -72,6 +88,9 @@ interface MetadataClass {
   id: string
   name: string
   description?: string
+  isPublic: boolean
+  allowedRoles?: string | string[]
+  allowedUserIds?: string | string[]
   classAttributes: ClassAttribute[]
   _count?: { vaults: number }
 }
@@ -167,6 +186,9 @@ export default function MetadataPage() {
                         {cls._count.vaults} vault
                       </Badge>
                     ) : null}
+                    <Badge variant={cls.isPublic !== false ? 'secondary' : 'outline'} className="ml-1">
+                      {cls.isPublic !== false ? 'Pubblico' : 'Riservato'}
+                    </Badge>
                   </div>
                   <div className="flex gap-1">
                     <Button
@@ -322,17 +344,38 @@ function CreateClassDialog({
 }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([])
+  const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
+  // Fetch users for permission selection
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
   const createMutation = useMutation({
-    mutationFn: () => metadataApi.createClass({ name, description: description || undefined }),
+    mutationFn: () => {
+      const data: any = { name, description: description || undefined, isPublic }
+      if (!isPublic) {
+        if (allowedRoles.length > 0) data.allowedRoles = allowedRoles
+        if (allowedUserIds.length > 0) data.allowedUserIds = allowedUserIds
+      }
+      return metadataApi.createClass(data)
+    },
     onSuccess: () => {
       toast({ title: 'Classe creata' })
       queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
       onOpenChange(false)
       setName('')
       setDescription('')
+      setIsPublic(true)
+      setAllowedRoles([])
+      setAllowedUserIds([])
     },
     onError: (error: any) => {
       toast({
@@ -345,7 +388,7 @@ function CreateClassDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nuova Classe</DialogTitle>
           <DialogDescription>
@@ -378,6 +421,78 @@ function CreateClassDialog({
               placeholder="Descrizione della classe"
             />
           </div>
+
+          {/* Permessi */}
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Visibilità</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isPublic ? 'Tutti possono vedere questa classe' : 'Solo utenti autorizzati'}
+                </p>
+              </div>
+              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+            </div>
+
+            {!isPublic && (
+              <>
+                <div className="space-y-2">
+                  <Label>Ruoli autorizzati</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {ROLES.map((role) => (
+                      <label
+                        key={role.value}
+                        className="flex items-center gap-2 px-3 py-1 rounded-md border cursor-pointer hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={allowedRoles.includes(role.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setAllowedRoles([...allowedRoles, role.value])
+                            } else {
+                              setAllowedRoles(allowedRoles.filter((r) => r !== role.value))
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{role.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Utenti specifici autorizzati</Label>
+                  {users && users.length > 0 ? (
+                    <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {users.map((user: User) => (
+                        <label
+                          key={user.id}
+                          className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted"
+                        >
+                          <Checkbox
+                            checked={allowedUserIds.includes(user.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setAllowedUserIds([...allowedUserIds, user.id])
+                              } else {
+                                setAllowedUserIds(allowedUserIds.filter((id) => id !== user.id))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">
+                            {user.firstName} {user.lastName} ({user.email})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nessun utente disponibile</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annulla
@@ -405,17 +520,55 @@ function EditClassDialog({
 }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([])
+  const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
+
+  // Fetch users for permission selection
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
+  // Helper to parse JSON fields
+  const parseJsonArray = (value: any): string[] => {
+    if (!value) return []
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return []
+  }
 
   if (metadataClass && name !== metadataClass.name) {
     setName(metadataClass.name)
     setDescription(metadataClass.description || '')
+    setIsPublic(metadataClass.isPublic !== false)
+    setAllowedRoles(parseJsonArray(metadataClass.allowedRoles))
+    setAllowedUserIds(parseJsonArray(metadataClass.allowedUserIds))
   }
 
   const updateMutation = useMutation({
-    mutationFn: () =>
-      metadataApi.updateClass(metadataClass!.id, { name, description: description || null }),
+    mutationFn: () => {
+      const data: any = { name, description: description || null, isPublic }
+      if (!isPublic) {
+        data.allowedRoles = allowedRoles.length > 0 ? allowedRoles : null
+        data.allowedUserIds = allowedUserIds.length > 0 ? allowedUserIds : null
+      } else {
+        data.allowedRoles = null
+        data.allowedUserIds = null
+      }
+      return metadataApi.updateClass(metadataClass!.id, data)
+    },
     onSuccess: () => {
       toast({ title: 'Classe aggiornata' })
       queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
@@ -432,7 +585,7 @@ function EditClassDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Modifica Classe</DialogTitle>
         </DialogHeader>
@@ -460,6 +613,78 @@ function EditClassDialog({
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+
+          {/* Permessi */}
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Visibilità</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isPublic ? 'Tutti possono vedere questa classe' : 'Solo utenti autorizzati'}
+                </p>
+              </div>
+              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+            </div>
+
+            {!isPublic && (
+              <>
+                <div className="space-y-2">
+                  <Label>Ruoli autorizzati</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {ROLES.map((role) => (
+                      <label
+                        key={role.value}
+                        className="flex items-center gap-2 px-3 py-1 rounded-md border cursor-pointer hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={allowedRoles.includes(role.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setAllowedRoles([...allowedRoles, role.value])
+                            } else {
+                              setAllowedRoles(allowedRoles.filter((r) => r !== role.value))
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{role.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Utenti specifici autorizzati</Label>
+                  {users && users.length > 0 ? (
+                    <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {users.map((user: User) => (
+                        <label
+                          key={user.id}
+                          className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted"
+                        >
+                          <Checkbox
+                            checked={allowedUserIds.includes(user.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setAllowedUserIds([...allowedUserIds, user.id])
+                              } else {
+                                setAllowedUserIds(allowedUserIds.filter((id) => id !== user.id))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">
+                            {user.firstName} {user.lastName} ({user.email})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nessun utente disponibile</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annulla

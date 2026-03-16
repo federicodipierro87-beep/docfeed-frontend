@@ -32,7 +32,8 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { attributesApi } from '@/lib/api'
+import { Switch } from '@/components/ui/switch'
+import { attributesApi, usersApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 
 const FIELD_TYPES = [
@@ -52,8 +53,26 @@ interface Attribute {
   isRequired: boolean
   isSearchable: boolean
   options?: string | string[]
+  isPublic: boolean
+  allowedRoles?: string | string[]
+  allowedUserIds?: string | string[]
   _count?: { classAttributes: number }
 }
+
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+}
+
+const ROLES = [
+  { value: 'ADMIN', label: 'Amministratore' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'USER', label: 'Utente' },
+  { value: 'READONLY', label: 'Sola Lettura' },
+]
 
 export default function AttributesPage() {
   const [createOpen, setCreateOpen] = useState(false)
@@ -101,6 +120,7 @@ export default function AttributesPage() {
                 <th className="py-3 px-4 text-left text-sm font-medium">Etichetta</th>
                 <th className="py-3 px-4 text-left text-sm font-medium">Tipo</th>
                 <th className="py-3 px-4 text-center text-sm font-medium">Obbligatorio</th>
+                <th className="py-3 px-4 text-center text-sm font-medium">Visibilità</th>
                 <th className="py-3 px-4 text-center text-sm font-medium">Usato in</th>
                 <th className="py-3 px-4 text-right text-sm font-medium">Azioni</th>
               </tr>
@@ -117,6 +137,11 @@ export default function AttributesPage() {
                   </td>
                   <td className="py-3 px-4 text-center">
                     {attr.isRequired ? '✓' : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <Badge variant={attr.isPublic ? 'secondary' : 'outline'}>
+                      {attr.isPublic ? 'Pubblico' : 'Riservato'}
+                    </Badge>
                   </td>
                   <td className="py-3 px-4 text-center">
                     <Badge variant="secondary">
@@ -200,11 +225,36 @@ function AttributeDialog({
   const [isRequired, setIsRequired] = useState(false)
   const [isSearchable, setIsSearchable] = useState(true)
   const [options, setOptions] = useState('')
+  const [isPublic, setIsPublic] = useState(true)
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([])
+  const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
   const isEdit = !!attribute
+
+  // Fetch users for permission selection
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
+  // Helper to parse JSON fields
+  const parseJsonArray = (value: any): string[] => {
+    if (!value) return []
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return []
+  }
 
   // Reset form when opening
   const resetForm = () => {
@@ -226,6 +276,9 @@ function AttributeDialog({
       } else {
         setOptions('')
       }
+      setIsPublic(attribute.isPublic !== false)
+      setAllowedRoles(parseJsonArray(attribute.allowedRoles))
+      setAllowedUserIds(parseJsonArray(attribute.allowedUserIds))
     } else {
       setName('')
       setLabel('')
@@ -233,6 +286,9 @@ function AttributeDialog({
       setIsRequired(false)
       setIsSearchable(true)
       setOptions('')
+      setIsPublic(true)
+      setAllowedRoles([])
+      setAllowedUserIds([])
     }
   }
 
@@ -245,9 +301,13 @@ function AttributeDialog({
 
   const createMutation = useMutation({
     mutationFn: () => {
-      const data: any = { name, label, type, isRequired, isSearchable }
+      const data: any = { name, label, type, isRequired, isSearchable, isPublic }
       if (type === 'SELECT' || type === 'MULTISELECT') {
         data.options = options.split(',').map((o) => o.trim()).filter(Boolean)
+      }
+      if (!isPublic) {
+        if (allowedRoles.length > 0) data.allowedRoles = allowedRoles
+        if (allowedUserIds.length > 0) data.allowedUserIds = allowedUserIds
       }
       return attributesApi.create(data)
     },
@@ -268,9 +328,16 @@ function AttributeDialog({
 
   const updateMutation = useMutation({
     mutationFn: () => {
-      const data: any = { label, isRequired, isSearchable }
+      const data: any = { label, isRequired, isSearchable, isPublic }
       if (type === 'SELECT' || type === 'MULTISELECT') {
         data.options = options.split(',').map((o) => o.trim()).filter(Boolean)
+      }
+      if (!isPublic) {
+        data.allowedRoles = allowedRoles.length > 0 ? allowedRoles : null
+        data.allowedUserIds = allowedUserIds.length > 0 ? allowedUserIds : null
+      } else {
+        data.allowedRoles = null
+        data.allowedUserIds = null
       }
       return attributesApi.update(attribute!.id, data)
     },
@@ -384,6 +451,80 @@ function AttributeDialog({
                 Ricercabile
               </Label>
             </div>
+          </div>
+
+          {/* Permessi */}
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Visibilità</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isPublic ? 'Tutti possono vedere questo attributo' : 'Solo utenti autorizzati'}
+                </p>
+              </div>
+              <Switch
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
+            </div>
+
+            {!isPublic && (
+              <>
+                <div className="space-y-2">
+                  <Label>Ruoli autorizzati</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {ROLES.map((role) => (
+                      <label
+                        key={role.value}
+                        className="flex items-center gap-2 px-3 py-1 rounded-md border cursor-pointer hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={allowedRoles.includes(role.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setAllowedRoles([...allowedRoles, role.value])
+                            } else {
+                              setAllowedRoles(allowedRoles.filter((r) => r !== role.value))
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{role.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Utenti specifici autorizzati</Label>
+                  {users && users.length > 0 ? (
+                    <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {users.map((user: User) => (
+                        <label
+                          key={user.id}
+                          className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted"
+                        >
+                          <Checkbox
+                            checked={allowedUserIds.includes(user.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setAllowedUserIds([...allowedUserIds, user.id])
+                              } else {
+                                setAllowedUserIds(allowedUserIds.filter((id) => id !== user.id))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">
+                            {user.firstName} {user.lastName} ({user.email})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nessun utente disponibile</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
