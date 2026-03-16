@@ -5,6 +5,7 @@ import { FileText, Upload, Grid, List, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { UploadDialog } from '@/components/documents/UploadDialog'
 import { documentsApi, vaultsApi } from '@/lib/api'
 import { formatBytes, formatRelativeTime, getMimeTypeLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -13,6 +14,7 @@ export default function DocumentsPage() {
   const { id: vaultId } = useParams()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [search, setSearch] = useState('')
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   const { data: vault } = useQuery({
     queryKey: ['vault', vaultId],
@@ -46,10 +48,15 @@ export default function DocumentsPage() {
             {documents.length} documenti
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setUploadOpen(true)}>
           <Upload className="mr-2 h-4 w-4" />
           Carica Documento
         </Button>
+        <UploadDialog
+          open={uploadOpen}
+          onOpenChange={setUploadOpen}
+          defaultVaultId={vaultId}
+        />
       </div>
 
       {/* Filters */}
