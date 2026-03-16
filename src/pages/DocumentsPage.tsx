@@ -1,15 +1,26 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
-import { FileText, Upload, Grid, List, Filter, Eye } from 'lucide-react'
+import { FileText, Upload, Grid, List, Filter, Eye, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { UploadDialog } from '@/components/documents/UploadDialog'
 import { PreviewDialog } from '@/components/documents/PreviewDialog'
 import { documentsApi, vaultsApi } from '@/lib/api'
 import { formatBytes, formatRelativeTime, getMimeTypeLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function DocumentsPage() {
   const { id: vaultId } = useParams()
@@ -18,11 +29,32 @@ export default function DocumentsPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewDoc, setPreviewDoc] = useState<{ id: string; name: string; mimeType: string } | null>(null)
+  const [deleteDoc, setDeleteDoc] = useState<{ id: string; name: string } | null>(null)
+
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const openPreview = (doc: any) => {
     setPreviewDoc({ id: doc.id, name: doc.name, mimeType: doc.mimeType })
     setPreviewOpen(true)
   }
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => documentsApi.delete(id),
+    onSuccess: () => {
+      toast({ title: 'Documento spostato nel cestino' })
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({ queryKey: ['vaults'] })
+      setDeleteDoc(null)
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: error.response?.data?.error || 'Errore durante l\'eliminazione',
+        variant: 'destructive',
+      })
+    },
+  })
 
   const { data: vault } = useQuery({
     queryKey: ['vault', vaultId],
@@ -140,6 +172,9 @@ export default function DocumentsPage() {
                 <th className="py-3 px-4 text-center text-sm font-medium w-16">
                   Anteprima
                 </th>
+                <th className="py-3 px-4 text-center text-sm font-medium w-16">
+                  Elimina
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -197,6 +232,20 @@ export default function DocumentsPage() {
                       <Eye className="h-4 w-4" />
                     </Button>
                   </td>
+                  <td className="py-3 px-4 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setDeleteDoc({ id: doc.id, name: doc.name })
+                      }}
+                      title="Elimina"
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -239,6 +288,31 @@ export default function DocumentsPage() {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteDoc} onOpenChange={(open) => !open && setDeleteDoc(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare il documento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Il documento "{deleteDoc?.name}" verrà spostato nel cestino.
+              Potrai ripristinarlo dalla pagina Cestino.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteDoc && deleteMutation.mutate(deleteDoc.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
