@@ -5,11 +5,18 @@ import { FolderOpen, Plus, Settings, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreateVaultDialog } from '@/components/vaults/CreateVaultDialog'
+import { EditVaultDialog } from '@/components/vaults/EditVaultDialog'
 import { vaultsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
 
 export default function VaultsPage() {
   const [createOpen, setCreateOpen] = useState(false)
+  const [editVault, setEditVault] = useState<{
+    id: string
+    name: string
+    description?: string | null
+    color?: string | null
+  } | null>(null)
 
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER'
@@ -63,7 +70,19 @@ export default function VaultsPage() {
                   {vault.name}
                 </CardTitle>
                 {isAdmin && (
-                  <Button variant="ghost" size="icon">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditVault({
+                        id: vault.id,
+                        name: vault.name,
+                        description: vault.description,
+                        color: vault.color,
+                      })
+                    }}
+                  >
                     <Settings className="h-4 w-4" />
                   </Button>
                 )}
@@ -116,6 +135,13 @@ export default function VaultsPage() {
 
       {/* Create Vault Dialog */}
       <CreateVaultDialog open={createOpen} onOpenChange={setCreateOpen} />
+
+      {/* Edit Vault Dialog */}
+      <EditVaultDialog
+        open={!!editVault}
+        onOpenChange={(open) => !open && setEditVault(null)}
+        vault={editVault}
+      />
     </div>
   )
 }
