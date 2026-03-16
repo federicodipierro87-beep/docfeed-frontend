@@ -4,6 +4,8 @@ import { Loader2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
@@ -29,8 +31,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { vaultsApi, metadataApi } from '@/lib/api'
+import { vaultsApi, metadataApi, usersApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
+
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+}
+
+const ROLES = [
+  { value: 'ADMIN', label: 'Amministratore' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'USER', label: 'Utente' },
+  { value: 'READONLY', label: 'Sola Lettura' },
+]
 
 interface EditVaultDialogProps {
   open: boolean
@@ -41,6 +58,9 @@ interface EditVaultDialogProps {
     description?: string | null
     color?: string | null
     metadataClassId?: string | null
+    isPublic?: boolean
+    allowedRoles?: string | string[]
+    allowedUserIds?: string | string[]
   } | null
 }
 
@@ -62,6 +82,9 @@ export function EditVaultDialog({ open, onOpenChange, vault }: EditVaultDialogPr
   const [description, setDescription] = useState('')
   const [color, setColor] = useState(COLORS[0])
   const [metadataClassId, setMetadataClassId] = useState<string | null>(null)
+  const [isPublic, setIsPublic] = useState(true)
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([])
+  const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const { toast } = useToast()
@@ -73,22 +96,58 @@ export function EditVaultDialog({ open, onOpenChange, vault }: EditVaultDialogPr
     enabled: open,
   })
 
+  // Fetch users for permission selection
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
+  // Helper to parse JSON fields
+  const parseJsonArray = (value: any): string[] => {
+    if (!value) return []
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return []
+  }
+
   useEffect(() => {
     if (vault) {
       setName(vault.name)
       setDescription(vault.description || '')
       setColor(vault.color || COLORS[0])
       setMetadataClassId(vault.metadataClassId || null)
+      setIsPublic(vault.isPublic !== false)
+      setAllowedRoles(parseJsonArray(vault.allowedRoles))
+      setAllowedUserIds(parseJsonArray(vault.allowedUserIds))
     }
   }, [vault])
 
   const updateMutation = useMutation({
-    mutationFn: () => vaultsApi.update(vault!.id, {
-      name,
-      description: description || null,
-      color,
-      metadataClassId: metadataClassId || null,
-    }),
+    mutationFn: () => {
+      const data: any = {
+        name,
+        description: description || null,
+        color,
+        metadataClassId: metadataClassId || null,
+        isPublic,
+      }
+      if (!isPublic) {
+        data.allowedRoles = allowedRoles.length > 0 ? allowedRoles : null
+        data.allowedUserIds = allowedUserIds.length > 0 ? allowedUserIds : null
+      } else {
+        data.allowedRoles = null
+        data.allowedUserIds = null
+      }
+      return vaultsApi.update(vault!.id, data)
+    },
     onSuccess: () => {
       toast({
         title: 'Vault aggiornato',
@@ -134,7 +193,7 @@ export function EditVaultDialog({ open, onOpenChange, vault }: EditVaultDialogPr
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifica Vault</DialogTitle>
             <DialogDescription>
@@ -206,6 +265,77 @@ export function EditVaultDialog({ open, onOpenChange, vault }: EditVaultDialogPr
               <p className="text-xs text-muted-foreground">
                 I documenti in questo vault avranno i campi della classe selezionata
               </p>
+            </div>
+
+            {/* Permessi */}
+            <div className="border-t pt-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Visibilità</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {isPublic ? 'Tutti possono vedere questo vault' : 'Solo utenti autorizzati'}
+                  </p>
+                </div>
+                <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+              </div>
+
+              {!isPublic && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Ruoli autorizzati</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {ROLES.map((role) => (
+                        <label
+                          key={role.value}
+                          className="flex items-center gap-2 px-3 py-1 rounded-md border cursor-pointer hover:bg-muted"
+                        >
+                          <Checkbox
+                            checked={allowedRoles.includes(role.value)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setAllowedRoles([...allowedRoles, role.value])
+                              } else {
+                                setAllowedRoles(allowedRoles.filter((r) => r !== role.value))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">{role.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Utenti specifici autorizzati</Label>
+                    {users && users.length > 0 ? (
+                      <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                        {users.map((user: User) => (
+                          <label
+                            key={user.id}
+                            className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted"
+                          >
+                            <Checkbox
+                              checked={allowedUserIds.includes(user.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setAllowedUserIds([...allowedUserIds, user.id])
+                                } else {
+                                  setAllowedUserIds(allowedUserIds.filter((id) => id !== user.id))
+                                }
+                              }}
+                            />
+                            <span className="text-sm">
+                              {user.firstName} {user.lastName} ({user.email})
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nessun utente disponibile</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Zona pericolosa */}

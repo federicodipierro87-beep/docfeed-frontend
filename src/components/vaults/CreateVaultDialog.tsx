@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
@@ -12,8 +14,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { vaultsApi } from '@/lib/api'
+import { vaultsApi, usersApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
+
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+}
+
+const ROLES = [
+  { value: 'ADMIN', label: 'Amministratore' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'USER', label: 'Utente' },
+  { value: 'READONLY', label: 'Sola Lettura' },
+]
 
 interface CreateVaultDialogProps {
   open: boolean
@@ -37,12 +54,29 @@ export function CreateVaultDialog({ open, onOpenChange }: CreateVaultDialogProps
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [color, setColor] = useState(COLORS[0])
+  const [isPublic, setIsPublic] = useState(true)
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([])
+  const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
+  // Fetch users for permission selection
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
   const createMutation = useMutation({
-    mutationFn: () => vaultsApi.create({ name, description: description || undefined, color }),
+    mutationFn: () => {
+      const data: any = { name, description: description || undefined, color, isPublic }
+      if (!isPublic) {
+        if (allowedRoles.length > 0) data.allowedRoles = allowedRoles
+        if (allowedUserIds.length > 0) data.allowedUserIds = allowedUserIds
+      }
+      return vaultsApi.create(data)
+    },
     onSuccess: () => {
       toast({
         title: 'Vault creato',
@@ -65,6 +99,9 @@ export function CreateVaultDialog({ open, onOpenChange }: CreateVaultDialogProps
     setName('')
     setDescription('')
     setColor(COLORS[0])
+    setIsPublic(true)
+    setAllowedRoles([])
+    setAllowedUserIds([])
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,7 +114,7 @@ export function CreateVaultDialog({ open, onOpenChange }: CreateVaultDialogProps
       if (!open) resetForm()
       onOpenChange(open)
     }}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nuovo Vault</DialogTitle>
           <DialogDescription>
@@ -125,6 +162,77 @@ export function CreateVaultDialog({ open, onOpenChange }: CreateVaultDialogProps
                 />
               ))}
             </div>
+          </div>
+
+          {/* Permessi */}
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Visibilità</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isPublic ? 'Tutti possono vedere questo vault' : 'Solo utenti autorizzati'}
+                </p>
+              </div>
+              <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+            </div>
+
+            {!isPublic && (
+              <>
+                <div className="space-y-2">
+                  <Label>Ruoli autorizzati</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {ROLES.map((role) => (
+                      <label
+                        key={role.value}
+                        className="flex items-center gap-2 px-3 py-1 rounded-md border cursor-pointer hover:bg-muted"
+                      >
+                        <Checkbox
+                          checked={allowedRoles.includes(role.value)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setAllowedRoles([...allowedRoles, role.value])
+                            } else {
+                              setAllowedRoles(allowedRoles.filter((r) => r !== role.value))
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{role.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Utenti specifici autorizzati</Label>
+                  {users && users.length > 0 ? (
+                    <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {users.map((user: User) => (
+                        <label
+                          key={user.id}
+                          className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-muted"
+                        >
+                          <Checkbox
+                            checked={allowedUserIds.includes(user.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setAllowedUserIds([...allowedUserIds, user.id])
+                              } else {
+                                setAllowedUserIds(allowedUserIds.filter((id) => id !== user.id))
+                              }
+                            }}
+                          />
+                          <span className="text-sm">
+                            {user.firstName} {user.lastName} ({user.email})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nessun utente disponibile</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
