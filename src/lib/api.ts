@@ -228,7 +228,34 @@ export const workflowsApi = {
     api.delete(`/workflows/${workflowId}/transitions/${transitionId}`),
 }
 
-// === METADATA API ===
+// === ATTRIBUTES API ===
+
+export const attributesApi = {
+  list: () =>
+    api.get('/attributes'),
+
+  get: (id: string) =>
+    api.get(`/attributes/${id}`),
+
+  create: (data: {
+    name: string
+    label: string
+    type: string
+    isRequired?: boolean
+    isSearchable?: boolean
+    defaultValue?: string
+    options?: string[]
+  }) =>
+    api.post('/attributes', data),
+
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/attributes/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/attributes/${id}`),
+}
+
+// === METADATA CLASSES API ===
 
 export const metadataApi = {
   listClasses: () =>
@@ -246,6 +273,17 @@ export const metadataApi = {
   deleteClass: (id: string) =>
     api.delete(`/metadata/classes/${id}`),
 
+  // Attributi della classe
+  addAttribute: (classId: string, data: { attributeId: string; isRequired?: boolean; order?: number }) =>
+    api.post(`/metadata/classes/${classId}/attributes`, data),
+
+  removeAttribute: (classId: string, attributeId: string) =>
+    api.delete(`/metadata/classes/${classId}/attributes/${attributeId}`),
+
+  updateAttribute: (classId: string, attributeId: string, data: { isRequired?: boolean; order?: number }) =>
+    api.patch(`/metadata/classes/${classId}/attributes/${attributeId}`, data),
+
+  // Campi legacy
   createField: (classId: string, data: Record<string, unknown>) =>
     api.post(`/metadata/classes/${classId}/fields`, data),
 

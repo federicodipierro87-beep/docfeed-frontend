@@ -7,6 +7,7 @@ import {
   Trash2,
   Users,
   GitBranch,
+  Tags,
   Database,
   Settings,
   LogOut,
@@ -26,7 +27,8 @@ const navigation = [
 const adminNavigation = [
   { name: 'Utenti', href: '/users', icon: Users },
   { name: 'Workflow', href: '/workflows', icon: GitBranch },
-  { name: 'Metadata', href: '/metadata', icon: Database },
+  { name: 'Attributi', href: '/attributes', icon: Tags },
+  { name: 'Classi', href: '/metadata', icon: Database },
 ]
 
 export default function Sidebar() {

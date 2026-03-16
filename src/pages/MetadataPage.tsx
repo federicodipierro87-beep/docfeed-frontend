@@ -7,7 +7,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
-  GripVertical,
+  X,
   Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -41,34 +41,38 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { metadataApi } from '@/lib/api'
+import { metadataApi, attributesApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 
-const FIELD_TYPES = [
-  { value: 'TEXT', label: 'Testo' },
-  { value: 'NUMBER', label: 'Numero' },
-  { value: 'DATE', label: 'Data' },
-  { value: 'BOOLEAN', label: 'Sì/No' },
-  { value: 'SELECT', label: 'Selezione singola' },
-  { value: 'MULTISELECT', label: 'Selezione multipla' },
-]
+const FIELD_TYPES: Record<string, string> = {
+  TEXT: 'Testo',
+  NUMBER: 'Numero',
+  DATE: 'Data',
+  BOOLEAN: 'Sì/No',
+  SELECT: 'Selezione',
+  MULTISELECT: 'Multi-selezione',
+}
 
-interface MetadataField {
+interface Attribute {
   id: string
   name: string
   label: string
   type: string
+}
+
+interface ClassAttribute {
+  id: string
+  attributeId: string
   isRequired: boolean
-  isSearchable: boolean
-  options?: string[]
   order: number
+  attribute: Attribute
 }
 
 interface MetadataClass {
   id: string
   name: string
   description?: string
-  fields: MetadataField[]
+  classAttributes: ClassAttribute[]
   _count?: { vaults: number }
 }
 
@@ -77,9 +81,7 @@ export default function MetadataPage() {
   const [createClassOpen, setCreateClassOpen] = useState(false)
   const [editClass, setEditClass] = useState<MetadataClass | null>(null)
   const [deleteClass, setDeleteClass] = useState<MetadataClass | null>(null)
-  const [addFieldTo, setAddFieldTo] = useState<string | null>(null)
-  const [editField, setEditField] = useState<{ classId: string; field: MetadataField } | null>(null)
-  const [deleteField, setDeleteField] = useState<{ classId: string; field: MetadataField } | null>(null)
+  const [addAttrToClass, setAddAttrToClass] = useState<string | null>(null)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -101,6 +103,22 @@ export default function MetadataPage() {
     })
   }
 
+  const removeAttributeMutation = useMutation({
+    mutationFn: ({ classId, attributeId }: { classId: string; attributeId: string }) =>
+      metadataApi.removeAttribute(classId, attributeId),
+    onSuccess: () => {
+      toast({ title: 'Attributo rimosso dalla classe' })
+      queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: error.response?.data?.error || 'Errore',
+        variant: 'destructive',
+      })
+    },
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -111,7 +129,7 @@ export default function MetadataPage() {
             Classi Metadata
           </h1>
           <p className="text-muted-foreground">
-            Definisci i campi metadata da associare ai vault
+            Crea classi e assegna gli attributi da usare nei vault
           </p>
         </div>
         <Button onClick={() => setCreateClassOpen(true)}>
@@ -142,7 +160,7 @@ export default function MetadataPage() {
                     )}
                     <CardTitle className="text-lg">{cls.name}</CardTitle>
                     <Badge variant="secondary" className="ml-2">
-                      {cls.fields?.length || 0} campi
+                      {cls.classAttributes?.length || 0} attributi
                     </Badge>
                     {cls._count?.vaults ? (
                       <Badge variant="outline" className="ml-1">
@@ -153,10 +171,11 @@ export default function MetadataPage() {
                   <div className="flex gap-1">
                     <Button
                       variant="ghost"
-                      size="icon"
-                      onClick={() => setAddFieldTo(cls.id)}
+                      size="sm"
+                      onClick={() => setAddAttrToClass(cls.id)}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4 mr-1" />
+                      Attributo
                     </Button>
                     <Button
                       variant="ghost"
@@ -184,12 +203,11 @@ export default function MetadataPage() {
 
               {expandedClasses.has(cls.id) && (
                 <CardContent className="pt-0">
-                  {cls.fields && cls.fields.length > 0 ? (
+                  {cls.classAttributes && cls.classAttributes.length > 0 ? (
                     <div className="border rounded-md">
                       <table className="w-full">
                         <thead>
                           <tr className="border-b bg-muted/50">
-                            <th className="py-2 px-3 text-left text-sm font-medium w-8"></th>
                             <th className="py-2 px-3 text-left text-sm font-medium">Nome</th>
                             <th className="py-2 px-3 text-left text-sm font-medium">Etichetta</th>
                             <th className="py-2 px-3 text-left text-sm font-medium">Tipo</th>
@@ -198,35 +216,31 @@ export default function MetadataPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {cls.fields.map((field) => (
-                            <tr key={field.id} className="border-b last:border-0">
-                              <td className="py-2 px-3">
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              </td>
-                              <td className="py-2 px-3 font-mono text-sm">{field.name}</td>
-                              <td className="py-2 px-3">{field.label}</td>
+                          {cls.classAttributes.map((ca) => (
+                            <tr key={ca.id} className="border-b last:border-0">
+                              <td className="py-2 px-3 font-mono text-sm">{ca.attribute.name}</td>
+                              <td className="py-2 px-3">{ca.attribute.label}</td>
                               <td className="py-2 px-3">
                                 <Badge variant="outline">
-                                  {FIELD_TYPES.find((t) => t.value === field.type)?.label || field.type}
+                                  {FIELD_TYPES[ca.attribute.type] || ca.attribute.type}
                                 </Badge>
                               </td>
                               <td className="py-2 px-3 text-center">
-                                {field.isRequired ? '✓' : '-'}
+                                {ca.isRequired ? '✓' : '-'}
                               </td>
                               <td className="py-2 px-3 text-right">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => setEditField({ classId: cls.id, field })}
+                                  onClick={() =>
+                                    removeAttributeMutation.mutate({
+                                      classId: cls.id,
+                                      attributeId: ca.attributeId,
+                                    })
+                                  }
+                                  disabled={removeAttributeMutation.isPending}
                                 >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setDeleteField({ classId: cls.id, field })}
-                                >
-                                  <Trash2 className="h-3 w-3" />
+                                  <X className="h-4 w-4" />
                                 </Button>
                               </td>
                             </tr>
@@ -236,12 +250,12 @@ export default function MetadataPage() {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      Nessun campo definito.{' '}
+                      Nessun attributo assegnato.{' '}
                       <button
                         className="text-primary hover:underline"
-                        onClick={() => setAddFieldTo(cls.id)}
+                        onClick={() => setAddAttrToClass(cls.id)}
                       >
-                        Aggiungi il primo campo
+                        Aggiungi attributi
                       </button>
                     </p>
                   )}
@@ -254,9 +268,9 @@ export default function MetadataPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Database className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">Nessuna classe metadata</p>
+            <p className="text-lg font-medium">Nessuna classe</p>
             <p className="text-muted-foreground">
-              Crea la prima classe per definire i campi dei tuoi documenti
+              Crea la prima classe per raggruppare gli attributi
             </p>
             <Button className="mt-4" onClick={() => setCreateClassOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -267,10 +281,7 @@ export default function MetadataPage() {
       )}
 
       {/* Create Class Dialog */}
-      <CreateClassDialog
-        open={createClassOpen}
-        onOpenChange={setCreateClassOpen}
-      />
+      <CreateClassDialog open={createClassOpen} onOpenChange={setCreateClassOpen} />
 
       {/* Edit Class Dialog */}
       <EditClassDialog
@@ -286,28 +297,16 @@ export default function MetadataPage() {
         metadataClass={deleteClass}
       />
 
-      {/* Add Field Dialog */}
-      <FieldDialog
-        open={!!addFieldTo}
-        onOpenChange={(open) => !open && setAddFieldTo(null)}
-        classId={addFieldTo}
-        field={null}
-      />
-
-      {/* Edit Field Dialog */}
-      <FieldDialog
-        open={!!editField}
-        onOpenChange={(open) => !open && setEditField(null)}
-        classId={editField?.classId || null}
-        field={editField?.field || null}
-      />
-
-      {/* Delete Field Dialog */}
-      <DeleteFieldDialog
-        open={!!deleteField}
-        onOpenChange={(open) => !open && setDeleteField(null)}
-        classId={deleteField?.classId || null}
-        field={deleteField?.field || null}
+      {/* Add Attribute Dialog */}
+      <AddAttributeDialog
+        open={!!addAttrToClass}
+        onOpenChange={(open) => !open && setAddAttrToClass(null)}
+        classId={addAttrToClass}
+        existingAttributeIds={
+          classes
+            ?.find((c: MetadataClass) => c.id === addAttrToClass)
+            ?.classAttributes?.map((ca: ClassAttribute) => ca.attributeId) || []
+        }
       />
     </div>
   )
@@ -329,7 +328,7 @@ function CreateClassDialog({
   const createMutation = useMutation({
     mutationFn: () => metadataApi.createClass({ name, description: description || undefined }),
     onSuccess: () => {
-      toast({ title: 'Classe creata', description: `La classe "${name}" è stata creata` })
+      toast({ title: 'Classe creata' })
       queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
       onOpenChange(false)
       setName('')
@@ -338,7 +337,7 @@ function CreateClassDialog({
     onError: (error: any) => {
       toast({
         title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante la creazione',
+        description: error.response?.data?.error || 'Errore',
         variant: 'destructive',
       })
     },
@@ -348,9 +347,9 @@ function CreateClassDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nuova Classe Metadata</DialogTitle>
+          <DialogTitle>Nuova Classe</DialogTitle>
           <DialogDescription>
-            Crea una nuova classe per raggruppare i campi metadata
+            Crea una nuova classe per raggruppare gli attributi
           </DialogDescription>
         </DialogHeader>
         <form
@@ -361,12 +360,12 @@ function CreateClassDialog({
           className="space-y-4"
         >
           <div className="space-y-2">
-            <Label htmlFor="class-name">Nome classe *</Label>
+            <Label htmlFor="class-name">Nome *</Label>
             <Input
               id="class-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Es. Contratto, Fattura, Documento HR..."
+              placeholder="Es. Contratto, Fattura..."
               required
             />
           </div>
@@ -376,7 +375,7 @@ function CreateClassDialog({
               id="class-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Breve descrizione della classe"
+              placeholder="Descrizione della classe"
             />
           </div>
           <DialogFooter>
@@ -384,10 +383,8 @@ function CreateClassDialog({
               Annulla
             </Button>
             <Button type="submit" disabled={!name || createMutation.isPending}>
-              {createMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Crea Classe
+              {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Crea
             </Button>
           </DialogFooter>
         </form>
@@ -411,12 +408,10 @@ function EditClassDialog({
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  useState(() => {
-    if (metadataClass) {
-      setName(metadataClass.name)
-      setDescription(metadataClass.description || '')
-    }
-  })
+  if (metadataClass && name !== metadataClass.name) {
+    setName(metadataClass.name)
+    setDescription(metadataClass.description || '')
+  }
 
   const updateMutation = useMutation({
     mutationFn: () =>
@@ -429,17 +424,11 @@ function EditClassDialog({
     onError: (error: any) => {
       toast({
         title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante il salvataggio',
+        description: error.response?.data?.error || 'Errore',
         variant: 'destructive',
       })
     },
   })
-
-  // Update form when metadataClass changes
-  if (metadataClass && name !== metadataClass.name && !updateMutation.isPending) {
-    setName(metadataClass.name)
-    setDescription(metadataClass.description || '')
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -455,7 +444,7 @@ function EditClassDialog({
           className="space-y-4"
         >
           <div className="space-y-2">
-            <Label htmlFor="edit-class-name">Nome classe *</Label>
+            <Label htmlFor="edit-class-name">Nome *</Label>
             <Input
               id="edit-class-name"
               value={name}
@@ -476,9 +465,7 @@ function EditClassDialog({
               Annulla
             </Button>
             <Button type="submit" disabled={!name || updateMutation.isPending}>
-              {updateMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+              {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Salva
             </Button>
           </DialogFooter>
@@ -511,7 +498,7 @@ function DeleteClassDialog({
     onError: (error: any) => {
       toast({
         title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante l\'eliminazione',
+        description: error.response?.data?.error || 'Errore',
         variant: 'destructive',
       })
     },
@@ -524,7 +511,6 @@ function DeleteClassDialog({
           <AlertDialogTitle>Eliminare la classe?</AlertDialogTitle>
           <AlertDialogDescription>
             Sei sicuro di voler eliminare la classe "{metadataClass?.name}"?
-            Tutti i campi associati verranno eliminati.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -533,9 +519,7 @@ function DeleteClassDialog({
             onClick={() => deleteMutation.mutate()}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {deleteMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
+            {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Elimina
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -544,266 +528,108 @@ function DeleteClassDialog({
   )
 }
 
-// === FIELD DIALOG (Create/Edit) ===
-function FieldDialog({
+// === ADD ATTRIBUTE DIALOG ===
+function AddAttributeDialog({
   open,
   onOpenChange,
   classId,
-  field,
+  existingAttributeIds,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   classId: string | null
-  field: MetadataField | null
+  existingAttributeIds: string[]
 }) {
-  const [name, setName] = useState('')
-  const [label, setLabel] = useState('')
-  const [type, setType] = useState('TEXT')
+  const [selectedAttributeId, setSelectedAttributeId] = useState<string>('')
   const [isRequired, setIsRequired] = useState(false)
-  const [isSearchable, setIsSearchable] = useState(true)
-  const [options, setOptions] = useState('')
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  const isEdit = !!field
+  const { data: attributes } = useQuery({
+    queryKey: ['attributes'],
+    queryFn: () => attributesApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
 
-  // Reset form when opening
-  const resetForm = () => {
-    if (field) {
-      setName(field.name)
-      setLabel(field.label)
-      setType(field.type)
-      setIsRequired(field.isRequired)
-      setIsSearchable(field.isSearchable)
-      setOptions(field.options?.join(', ') || '')
-    } else {
-      setName('')
-      setLabel('')
-      setType('TEXT')
+  // Filter out already assigned attributes
+  const availableAttributes = attributes?.filter(
+    (attr: Attribute) => !existingAttributeIds.includes(attr.id)
+  )
+
+  const addMutation = useMutation({
+    mutationFn: () =>
+      metadataApi.addAttribute(classId!, { attributeId: selectedAttributeId, isRequired }),
+    onSuccess: () => {
+      toast({ title: 'Attributo aggiunto alla classe' })
+      queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
+      onOpenChange(false)
+      setSelectedAttributeId('')
       setIsRequired(false)
-      setIsSearchable(true)
-      setOptions('')
-    }
-  }
-
-  // Update form when field changes
-  if (open && field && name !== field.name) {
-    resetForm()
-  } else if (open && !field && name !== '') {
-    resetForm()
-  }
-
-  const createMutation = useMutation({
-    mutationFn: () => {
-      const data: any = { name, label, type, isRequired, isSearchable }
-      if (type === 'SELECT' || type === 'MULTISELECT') {
-        data.options = options.split(',').map((o) => o.trim()).filter(Boolean)
-      }
-      return metadataApi.createField(classId!, data)
-    },
-    onSuccess: () => {
-      toast({ title: 'Campo creato' })
-      queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
-      onOpenChange(false)
-      resetForm()
     },
     onError: (error: any) => {
       toast({
         title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante la creazione',
+        description: error.response?.data?.error || 'Errore',
         variant: 'destructive',
       })
     },
   })
-
-  const updateMutation = useMutation({
-    mutationFn: () => {
-      const data: any = { label, isRequired, isSearchable }
-      if (type === 'SELECT' || type === 'MULTISELECT') {
-        data.options = options.split(',').map((o) => o.trim()).filter(Boolean)
-      }
-      return metadataApi.updateField(field!.id, data)
-    },
-    onSuccess: () => {
-      toast({ title: 'Campo aggiornato' })
-      queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
-      onOpenChange(false)
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante il salvataggio',
-        variant: 'destructive',
-      })
-    },
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (isEdit) {
-      updateMutation.mutate()
-    } else {
-      createMutation.mutate()
-    }
-  }
-
-  const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Modifica Campo' : 'Nuovo Campo'}</DialogTitle>
-          <DialogDescription>
-            {isEdit ? 'Modifica le proprietà del campo' : 'Aggiungi un nuovo campo alla classe'}
-          </DialogDescription>
+          <DialogTitle>Aggiungi Attributo</DialogTitle>
+          <DialogDescription>Seleziona un attributo da aggiungere alla classe</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="field-name">Nome (ID) *</Label>
-              <Input
-                id="field-name"
-                value={name}
-                onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
-                placeholder="es. data_scadenza"
-                required
-                disabled={isEdit}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="field-label">Etichetta *</Label>
-              <Input
-                id="field-label"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder="es. Data Scadenza"
-                required
-              />
-            </div>
-          </div>
-
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Tipo campo *</Label>
-            <Select value={type} onValueChange={setType} disabled={isEdit}>
+            <Label>Attributo</Label>
+            <Select value={selectedAttributeId} onValueChange={setSelectedAttributeId}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Seleziona un attributo" />
               </SelectTrigger>
               <SelectContent>
-                {FIELD_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
+                {availableAttributes?.length === 0 ? (
+                  <div className="p-2 text-sm text-muted-foreground">
+                    Tutti gli attributi sono già assegnati
+                  </div>
+                ) : (
+                  availableAttributes?.map((attr: Attribute) => (
+                    <SelectItem key={attr.id} value={attr.id}>
+                      {attr.label} ({attr.name})
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
 
-          {(type === 'SELECT' || type === 'MULTISELECT') && (
-            <div className="space-y-2">
-              <Label htmlFor="field-options">Opzioni (separate da virgola)</Label>
-              <Input
-                id="field-options"
-                value={options}
-                onChange={(e) => setOptions(e.target.value)}
-                placeholder="es. Opzione 1, Opzione 2, Opzione 3"
-              />
-            </div>
-          )}
-
-          <div className="flex gap-6">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="field-required"
-                checked={isRequired}
-                onCheckedChange={(checked) => setIsRequired(checked as boolean)}
-              />
-              <Label htmlFor="field-required" className="cursor-pointer">
-                Obbligatorio
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="field-searchable"
-                checked={isSearchable}
-                onCheckedChange={(checked) => setIsSearchable(checked as boolean)}
-              />
-              <Label htmlFor="field-searchable" className="cursor-pointer">
-                Ricercabile
-              </Label>
-            </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="add-attr-required"
+              checked={isRequired}
+              onCheckedChange={(checked) => setIsRequired(checked as boolean)}
+            />
+            <Label htmlFor="add-attr-required" className="cursor-pointer">
+              Obbligatorio in questa classe
+            </Label>
           </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annulla
-            </Button>
-            <Button type="submit" disabled={!name || !label || isPending}>
-              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isEdit ? 'Salva' : 'Crea Campo'}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Annulla
+          </Button>
+          <Button
+            onClick={() => addMutation.mutate()}
+            disabled={!selectedAttributeId || addMutation.isPending}
+          >
+            {addMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Aggiungi
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-// === DELETE FIELD DIALOG ===
-function DeleteFieldDialog({
-  open,
-  onOpenChange,
-  classId,
-  field,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  classId: string | null
-  field: MetadataField | null
-}) {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-
-  const deleteMutation = useMutation({
-    mutationFn: () => metadataApi.deleteField(field!.id),
-    onSuccess: () => {
-      toast({ title: 'Campo eliminato' })
-      queryClient.invalidateQueries({ queryKey: ['metadata-classes'] })
-      onOpenChange(false)
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante l\'eliminazione',
-        variant: 'destructive',
-      })
-    },
-  })
-
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Eliminare il campo?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Sei sicuro di voler eliminare il campo "{field?.label}"?
-            I valori associati ai documenti verranno eliminati.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Annulla</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => deleteMutation.mutate()}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {deleteMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            Elimina
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   )
 }

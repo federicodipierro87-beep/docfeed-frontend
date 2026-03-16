@@ -12,6 +12,7 @@ import SearchPage from '@/pages/SearchPage'
 import TrashPage from '@/pages/TrashPage'
 import UsersPage from '@/pages/UsersPage'
 import WorkflowsPage from '@/pages/WorkflowsPage'
+import AttributesPage from '@/pages/AttributesPage'
 import MetadataPage from '@/pages/MetadataPage'
 import SettingsPage from '@/pages/SettingsPage'
 
@@ -87,6 +88,14 @@ export default function App() {
             element={
               <AdminRoute>
                 <WorkflowsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="attributes"
+            element={
+              <AdminRoute>
+                <AttributesPage />
               </AdminRoute>
             }
           />
