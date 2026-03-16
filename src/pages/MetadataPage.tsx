@@ -88,11 +88,14 @@ interface MetadataClass {
   id: string
   name: string
   description?: string
+  parentId?: string | null
+  parent?: { id: string; name: string } | null
+  children?: { id: string; name: string }[]
   isPublic: boolean
   allowedRoles?: string | string[]
   allowedUserIds?: string | string[]
   classAttributes: ClassAttribute[]
-  _count?: { vaults: number }
+  _count?: { vaults: number; children?: number }
 }
 
 export default function MetadataPage() {
@@ -178,9 +181,19 @@ export default function MetadataPage() {
                       <ChevronRight className="h-4 w-4" />
                     )}
                     <CardTitle className="text-lg">{cls.name}</CardTitle>
+                    {cls.parent && (
+                      <Badge variant="outline" className="ml-2">
+                        in {cls.parent.name}
+                      </Badge>
+                    )}
                     <Badge variant="secondary" className="ml-2">
                       {cls.classAttributes?.length || 0} attributi
                     </Badge>
+                    {cls._count?.children ? (
+                      <Badge variant="outline" className="ml-1">
+                        {cls._count.children} sottoclassi
+                      </Badge>
+                    ) : null}
                     {cls._count?.vaults ? (
                       <Badge variant="outline" className="ml-1">
                         {cls._count.vaults} vault
@@ -344,6 +357,7 @@ function CreateClassDialog({
 }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [parentId, setParentId] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
   const [allowedRoles, setAllowedRoles] = useState<string[]>([])
   const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
@@ -358,9 +372,17 @@ function CreateClassDialog({
     enabled: open,
   })
 
+  // Fetch classes for parent selection
+  const { data: allClasses } = useQuery({
+    queryKey: ['metadata-classes'],
+    queryFn: () => metadataApi.listClasses().then((r) => r.data.data),
+    enabled: open,
+  })
+
   const createMutation = useMutation({
     mutationFn: () => {
       const data: any = { name, description: description || undefined, isPublic }
+      if (parentId) data.parentId = parentId
       if (!isPublic) {
         if (allowedRoles.length > 0) data.allowedRoles = allowedRoles
         if (allowedUserIds.length > 0) data.allowedUserIds = allowedUserIds
@@ -373,6 +395,7 @@ function CreateClassDialog({
       onOpenChange(false)
       setName('')
       setDescription('')
+      setParentId(null)
       setIsPublic(true)
       setAllowedRoles([])
       setAllowedUserIds([])
@@ -420,6 +443,30 @@ function CreateClassDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descrizione della classe"
             />
+          </div>
+
+          {/* Classe Padre */}
+          <div className="space-y-2">
+            <Label>Classe Padre (opzionale)</Label>
+            <Select
+              value={parentId || 'none'}
+              onValueChange={(value) => setParentId(value === 'none' ? null : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona classe padre" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nessuna (classe principale)</SelectItem>
+                {allClasses?.map((cls: MetadataClass) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.parent ? `${cls.parent.name} / ${cls.name}` : cls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Crea una sottoclasse all'interno di un'altra classe
+            </p>
           </div>
 
           {/* Permessi */}
@@ -520,6 +567,7 @@ function EditClassDialog({
 }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [parentId, setParentId] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
   const [allowedRoles, setAllowedRoles] = useState<string[]>([])
   const [allowedUserIds, setAllowedUserIds] = useState<string[]>([])
@@ -531,6 +579,13 @@ function EditClassDialog({
   const { data: users } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
+  // Fetch classes for parent selection
+  const { data: allClasses } = useQuery({
+    queryKey: ['metadata-classes'],
+    queryFn: () => metadataApi.listClasses().then((r) => r.data.data),
     enabled: open,
   })
 
@@ -552,14 +607,23 @@ function EditClassDialog({
   if (metadataClass && name !== metadataClass.name) {
     setName(metadataClass.name)
     setDescription(metadataClass.description || '')
+    setParentId(metadataClass.parentId || null)
     setIsPublic(metadataClass.isPublic !== false)
     setAllowedRoles(parseJsonArray(metadataClass.allowedRoles))
     setAllowedUserIds(parseJsonArray(metadataClass.allowedUserIds))
   }
 
+  // Filter out the current class and its children from parent options
+  const availableParents = allClasses?.filter((cls: MetadataClass) => {
+    if (cls.id === metadataClass?.id) return false
+    // Also exclude children of this class
+    if (cls.parentId === metadataClass?.id) return false
+    return true
+  })
+
   const updateMutation = useMutation({
     mutationFn: () => {
-      const data: any = { name, description: description || null, isPublic }
+      const data: any = { name, description: description || null, parentId, isPublic }
       if (!isPublic) {
         data.allowedRoles = allowedRoles.length > 0 ? allowedRoles : null
         data.allowedUserIds = allowedUserIds.length > 0 ? allowedUserIds : null
@@ -612,6 +676,30 @@ function EditClassDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Classe Padre */}
+          <div className="space-y-2">
+            <Label>Classe Padre (opzionale)</Label>
+            <Select
+              value={parentId || 'none'}
+              onValueChange={(value) => setParentId(value === 'none' ? null : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona classe padre" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nessuna (classe principale)</SelectItem>
+                {availableParents?.map((cls: MetadataClass) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.parent ? `${cls.parent.name} / ${cls.name}` : cls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Sposta questa classe come sottoclasse di un'altra
+            </p>
           </div>
 
           {/* Permessi */}
