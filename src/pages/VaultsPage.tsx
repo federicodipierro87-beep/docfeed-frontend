@@ -16,6 +16,7 @@ export default function VaultsPage() {
     name: string
     description?: string | null
     color?: string | null
+    metadataClassId?: string | null
   } | null>(null)
 
   const { user } = useAuthStore()
@@ -80,6 +81,7 @@ export default function VaultsPage() {
                         name: vault.name,
                         description: vault.description,
                         color: vault.color,
+                        metadataClassId: vault.metadataClassId,
                       })
                     }}
                   >

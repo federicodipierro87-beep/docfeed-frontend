@@ -7,6 +7,7 @@ import {
   Trash2,
   Users,
   GitBranch,
+  Database,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const navigation = [
 const adminNavigation = [
   { name: 'Utenti', href: '/users', icon: Users },
   { name: 'Workflow', href: '/workflows', icon: GitBranch },
+  { name: 'Metadata', href: '/metadata', icon: Database },
 ]
 
 export default function Sidebar() {

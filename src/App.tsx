@@ -12,6 +12,7 @@ import SearchPage from '@/pages/SearchPage'
 import TrashPage from '@/pages/TrashPage'
 import UsersPage from '@/pages/UsersPage'
 import WorkflowsPage from '@/pages/WorkflowsPage'
+import MetadataPage from '@/pages/MetadataPage'
 import SettingsPage from '@/pages/SettingsPage'
 
 // Layout
@@ -86,6 +87,14 @@ export default function App() {
             element={
               <AdminRoute>
                 <WorkflowsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="metadata"
+            element={
+              <AdminRoute>
+                <MetadataPage />
               </AdminRoute>
             }
           />

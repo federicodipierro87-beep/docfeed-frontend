@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +22,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { vaultsApi } from '@/lib/api'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { vaultsApi, metadataApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 
 interface EditVaultDialogProps {
@@ -33,6 +40,7 @@ interface EditVaultDialogProps {
     name: string
     description?: string | null
     color?: string | null
+    metadataClassId?: string | null
   } | null
 }
 
@@ -53,21 +61,34 @@ export function EditVaultDialog({ open, onOpenChange, vault }: EditVaultDialogPr
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [color, setColor] = useState(COLORS[0])
+  const [metadataClassId, setMetadataClassId] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
+
+  const { data: metadataClasses } = useQuery({
+    queryKey: ['metadata-classes'],
+    queryFn: () => metadataApi.listClasses().then((r) => r.data.data),
+    enabled: open,
+  })
 
   useEffect(() => {
     if (vault) {
       setName(vault.name)
       setDescription(vault.description || '')
       setColor(vault.color || COLORS[0])
+      setMetadataClassId(vault.metadataClassId || null)
     }
   }, [vault])
 
   const updateMutation = useMutation({
-    mutationFn: () => vaultsApi.update(vault!.id, { name, description: description || null, color }),
+    mutationFn: () => vaultsApi.update(vault!.id, {
+      name,
+      description: description || null,
+      color,
+      metadataClassId: metadataClassId || null,
+    }),
     onSuccess: () => {
       toast({
         title: 'Vault aggiornato',
@@ -161,6 +182,30 @@ export function EditVaultDialog({ open, onOpenChange, vault }: EditVaultDialogPr
                   />
                 ))}
               </div>
+            </div>
+
+            {/* Classe Metadata */}
+            <div className="space-y-2">
+              <Label>Classe Metadata</Label>
+              <Select
+                value={metadataClassId || 'none'}
+                onValueChange={(value) => setMetadataClassId(value === 'none' ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona una classe metadata" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nessuna classe</SelectItem>
+                  {metadataClasses?.map((cls: any) => (
+                    <SelectItem key={cls.id} value={cls.id}>
+                      {cls.name} ({cls.fields?.length || 0} campi)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                I documenti in questo vault avranno i campi della classe selezionata
+              </p>
             </div>
 
             {/* Zona pericolosa */}
