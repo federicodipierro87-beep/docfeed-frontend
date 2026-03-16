@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
-import { FileText, Upload, Grid, List, Filter } from 'lucide-react'
+import { FileText, Upload, Grid, List, Filter, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { UploadDialog } from '@/components/documents/UploadDialog'
+import { PreviewDialog } from '@/components/documents/PreviewDialog'
 import { documentsApi, vaultsApi } from '@/lib/api'
 import { formatBytes, formatRelativeTime, getMimeTypeLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -15,6 +16,13 @@ export default function DocumentsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [search, setSearch] = useState('')
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewDoc, setPreviewDoc] = useState<{ id: string; name: string; mimeType: string } | null>(null)
+
+  const openPreview = (doc: any) => {
+    setPreviewDoc({ id: doc.id, name: doc.name, mimeType: doc.mimeType })
+    setPreviewOpen(true)
+  }
 
   const { data: vault } = useQuery({
     queryKey: ['vault', vaultId],
@@ -56,6 +64,11 @@ export default function DocumentsPage() {
           open={uploadOpen}
           onOpenChange={setUploadOpen}
           defaultVaultId={vaultId}
+        />
+        <PreviewDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          document={previewDoc}
         />
       </div>
 
@@ -124,6 +137,9 @@ export default function DocumentsPage() {
                 <th className="py-3 px-4 text-left text-sm font-medium">
                   Modificato
                 </th>
+                <th className="py-3 px-4 text-center text-sm font-medium w-16">
+                  Anteprima
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -167,6 +183,19 @@ export default function DocumentsPage() {
                   </td>
                   <td className="py-3 px-4 text-muted-foreground">
                     {formatRelativeTime(doc.updatedAt)}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        openPreview(doc)
+                      }}
+                      title="Anteprima"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}
