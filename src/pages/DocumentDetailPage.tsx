@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import {
   FileText,
@@ -21,12 +21,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EditDocumentDialog } from '@/components/documents/EditDocumentDialog'
 import { documentsApi } from '@/lib/api'
 import { formatBytes, formatDateTime, getMimeTypeLabel } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 export default function DocumentDetailPage() {
   const { id } = useParams()
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const { data: document, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -44,6 +48,42 @@ export default function DocumentDetailPage() {
     queryKey: ['document-transitions', id],
     queryFn: () => documentsApi.transitions(id!).then((r) => r.data.data),
     enabled: !!id && !!document?.workflowState,
+  })
+
+  const checkoutMutation = useMutation({
+    mutationFn: () => documentsApi.checkout(id!),
+    onSuccess: () => {
+      toast({
+        title: 'Check-out effettuato',
+        description: 'Il documento è ora bloccato per la modifica',
+      })
+      queryClient.invalidateQueries({ queryKey: ['document', id] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: error.response?.data?.error || 'Errore durante il check-out',
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const checkinMutation = useMutation({
+    mutationFn: () => documentsApi.checkin(id!),
+    onSuccess: () => {
+      toast({
+        title: 'Check-in effettuato',
+        description: 'Il documento è stato sbloccato',
+      })
+      queryClient.invalidateQueries({ queryKey: ['document', id] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: error.response?.data?.error || 'Errore durante il check-in',
+        variant: 'destructive',
+      })
+    },
   })
 
   const handleDownload = async () => {
@@ -209,14 +249,32 @@ export default function DocumentDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {document.checkedOutBy ? (
-            <Button variant="outline" size="sm">
-              <Unlock className="h-4 w-4 mr-2" />
+          {document.checkedOutById ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => checkinMutation.mutate()}
+              disabled={checkinMutation.isPending}
+            >
+              {checkinMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Unlock className="h-4 w-4 mr-2" />
+              )}
               Check-in
             </Button>
           ) : (
-            <Button variant="outline" size="sm">
-              <Lock className="h-4 w-4 mr-2" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => checkoutMutation.mutate()}
+              disabled={checkoutMutation.isPending}
+            >
+              {checkoutMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Lock className="h-4 w-4 mr-2" />
+              )}
               Check-out
             </Button>
           )}
