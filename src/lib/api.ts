@@ -231,7 +231,7 @@ export const workflowsApi = {
 // === METADATA API ===
 
 export const metadataApi = {
-  classes: () =>
+  listClasses: () =>
     api.get('/metadata/classes'),
 
   getClass: (id: string) =>
