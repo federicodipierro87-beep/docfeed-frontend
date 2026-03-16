@@ -9,6 +9,7 @@ import DocumentsPage from '@/pages/DocumentsPage'
 import DocumentDetailPage from '@/pages/DocumentDetailPage'
 import VaultsPage from '@/pages/VaultsPage'
 import SearchPage from '@/pages/SearchPage'
+import TrashPage from '@/pages/TrashPage'
 import UsersPage from '@/pages/UsersPage'
 import WorkflowsPage from '@/pages/WorkflowsPage'
 import SettingsPage from '@/pages/SettingsPage'
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="vaults" element={<VaultsPage />} />
           <Route path="vaults/:id" element={<DocumentsPage />} />
           <Route path="search" element={<SearchPage />} />
+          <Route path="trash" element={<TrashPage />} />
           <Route path="settings" element={<SettingsPage />} />
 
           {/* Admin routes */}

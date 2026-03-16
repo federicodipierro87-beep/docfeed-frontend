@@ -4,6 +4,7 @@ import {
   FileText,
   FolderOpen,
   Search,
+  Trash2,
   Users,
   GitBranch,
   Settings,
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Documenti', href: '/documents', icon: FileText },
   { name: 'Vault', href: '/vaults', icon: FolderOpen },
   { name: 'Ricerca', href: '/search', icon: Search },
+  { name: 'Cestino', href: '/trash', icon: Trash2 },
 ]
 
 const adminNavigation = [
