@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EditDocumentDialog } from '@/components/documents/EditDocumentDialog'
 import { documentsApi } from '@/lib/api'
 import { formatBytes, formatDateTime, getMimeTypeLabel } from '@/lib/utils'
 
@@ -25,6 +26,7 @@ export default function DocumentDetailPage() {
   const { id } = useParams()
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   const { data: document, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -222,10 +224,20 @@ export default function DocumentDetailPage() {
             <Download className="h-4 w-4 mr-2" />
             Download
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Edit className="h-4 w-4 mr-2" />
             Modifica
           </Button>
+          <EditDocumentDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            document={document ? {
+              id: document.id,
+              name: document.name,
+              description: document.description,
+              vaultId: document.vaultId,
+            } : null}
+          />
           <Button variant="outline" size="sm" className="text-destructive">
             <Trash2 className="h-4 w-4" />
           </Button>
