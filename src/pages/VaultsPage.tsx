@@ -4,10 +4,13 @@ import { Link } from 'react-router-dom'
 import { FolderOpen, Plus, Settings, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CreateVaultDialog } from '@/components/vaults/CreateVaultDialog'
 import { vaultsApi } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
 
 export default function VaultsPage() {
+  const [createOpen, setCreateOpen] = useState(false)
+
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER'
 
@@ -35,7 +38,7 @@ export default function VaultsPage() {
           </p>
         </div>
         {isAdmin && (
-          <Button>
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nuovo Vault
           </Button>
@@ -102,7 +105,7 @@ export default function VaultsPage() {
                 : 'Nessun vault disponibile'}
             </p>
             {isAdmin && (
-              <Button className="mt-4">
+              <Button className="mt-4" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Crea Vault
               </Button>
@@ -110,6 +113,9 @@ export default function VaultsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Create Vault Dialog */}
+      <CreateVaultDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   )
 }
