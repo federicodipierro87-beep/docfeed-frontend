@@ -90,17 +90,17 @@ export default function AttributesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Tags className="h-6 w-6" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Tags className="h-5 w-5 sm:h-6 sm:w-6" />
             Attributi
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Definisci gli attributi da usare nelle classi metadata
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nuovo Attributo
         </Button>
@@ -112,46 +112,48 @@ export default function AttributesPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : attributes && attributes.length > 0 ? (
-        <div className="rounded-lg border bg-card">
-          <table className="w-full">
+        <div className="rounded-lg border bg-card overflow-x-auto">
+          <table className="w-full min-w-[500px]">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="py-3 px-4 text-left text-sm font-medium">Nome</th>
-                <th className="py-3 px-4 text-left text-sm font-medium">Etichetta</th>
+                <th className="py-3 px-4 text-left text-sm font-medium">Attributo</th>
                 <th className="py-3 px-4 text-left text-sm font-medium">Tipo</th>
-                <th className="py-3 px-4 text-center text-sm font-medium">Obbligatorio</th>
-                <th className="py-3 px-4 text-center text-sm font-medium">Visibilità</th>
-                <th className="py-3 px-4 text-center text-sm font-medium">Usato in</th>
-                <th className="py-3 px-4 text-right text-sm font-medium">Azioni</th>
+                <th className="py-3 px-4 text-center text-sm font-medium hidden sm:table-cell">Req</th>
+                <th className="py-3 px-4 text-center text-sm font-medium hidden md:table-cell">Visibilità</th>
+                <th className="py-3 px-4 text-center text-sm font-medium hidden lg:table-cell">Classi</th>
+                <th className="py-3 px-4 text-right text-sm font-medium"></th>
               </tr>
             </thead>
             <tbody>
               {attributes.map((attr: Attribute) => (
                 <tr key={attr.id} className="border-b last:border-0 hover:bg-muted/50">
-                  <td className="py-3 px-4 font-mono text-sm">{attr.name}</td>
-                  <td className="py-3 px-4">{attr.label}</td>
                   <td className="py-3 px-4">
-                    <Badge variant="outline">
+                    <div className="font-mono text-sm">{attr.name}</div>
+                    <div className="text-xs text-muted-foreground">{attr.label}</div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <Badge variant="outline" className="text-xs">
                       {FIELD_TYPES.find((t) => t.value === attr.type)?.label || attr.type}
                     </Badge>
                   </td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-3 px-4 text-center hidden sm:table-cell">
                     {attr.isRequired ? '✓' : '-'}
                   </td>
-                  <td className="py-3 px-4 text-center">
-                    <Badge variant={attr.isPublic ? 'secondary' : 'outline'}>
-                      {attr.isPublic ? 'Pubblico' : 'Riservato'}
+                  <td className="py-3 px-4 text-center hidden md:table-cell">
+                    <Badge variant={attr.isPublic ? 'secondary' : 'outline'} className="text-xs">
+                      {attr.isPublic ? 'Pub' : 'Priv'}
                     </Badge>
                   </td>
-                  <td className="py-3 px-4 text-center">
-                    <Badge variant="secondary">
-                      {attr._count?.classAttributes || 0} classi
+                  <td className="py-3 px-4 text-center hidden lg:table-cell">
+                    <Badge variant="secondary" className="text-xs">
+                      {attr._count?.classAttributes || 0}
                     </Badge>
                   </td>
                   <td className="py-3 px-4 text-right">
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-8 w-8 p-0"
                       onClick={() => setEditAttr(attr)}
                     >
                       <Pencil className="h-4 w-4" />
@@ -159,6 +161,7 @@ export default function AttributesPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-8 w-8 p-0"
                       onClick={() => setDeleteAttr(attr)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -368,7 +371,7 @@ function AttributeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Modifica Attributo' : 'Nuovo Attributo'}</DialogTitle>
           <DialogDescription>
@@ -378,7 +381,7 @@ function AttributeDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="attr-name">Nome (ID) *</Label>
               <Input
@@ -430,14 +433,14 @@ function AttributeDialog({
             </div>
           )}
 
-          <div className="flex gap-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
             <div className="flex items-center gap-2">
               <Checkbox
                 id="attr-required"
                 checked={isRequired}
                 onCheckedChange={(checked) => setIsRequired(checked as boolean)}
               />
-              <Label htmlFor="attr-required" className="cursor-pointer">
+              <Label htmlFor="attr-required" className="cursor-pointer text-sm">
                 Obbligatorio di default
               </Label>
             </div>
@@ -447,7 +450,7 @@ function AttributeDialog({
                 checked={isSearchable}
                 onCheckedChange={(checked) => setIsSearchable(checked as boolean)}
               />
-              <Label htmlFor="attr-searchable" className="cursor-pointer">
+              <Label htmlFor="attr-searchable" className="cursor-pointer text-sm">
                 Ricercabile
               </Label>
             </div>

@@ -53,33 +53,35 @@ export default function SearchPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Ricerca</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold">Ricerca</h1>
+        <p className="text-sm text-muted-foreground">
           Cerca tra tutti i tuoi documenti
         </p>
       </div>
 
       {/* Search form */}
-      <form onSubmit={handleSearch} className="flex gap-4">
+      <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row sm:gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Cerca documenti, contenuti, metadata..."
+            placeholder="Cerca documenti..."
             className="pl-10"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <Button type="submit">Cerca</Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter className="h-4 w-4 mr-2" />
-          Filtri
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" className="flex-1 sm:flex-none">Cerca</Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Filtri</span>
+          </Button>
+        </div>
       </form>
 
       {/* Filters */}

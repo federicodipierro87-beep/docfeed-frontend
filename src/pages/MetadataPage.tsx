@@ -144,17 +144,17 @@ export default function MetadataPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Database className="h-6 w-6" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Database className="h-5 w-5 sm:h-6 sm:w-6" />
             Classi Metadata
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Crea classi e assegna gli attributi da usare nei vault
           </p>
         </div>
-        <Button onClick={() => setCreateClassOpen(true)}>
+        <Button onClick={() => setCreateClassOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nuova Classe
         </Button>
@@ -170,51 +170,55 @@ export default function MetadataPage() {
           {classes.map((cls: MetadataClass) => (
             <Card key={cls.id}>
               <CardHeader className="py-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div
-                    className="flex items-center gap-2 cursor-pointer flex-1"
+                    className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
                     onClick={() => toggleExpand(cls.id)}
                   >
                     {expandedClasses.has(cls.id) ? (
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-4 w-4 shrink-0" />
                     ) : (
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4 shrink-0" />
                     )}
-                    <CardTitle className="text-lg">{cls.name}</CardTitle>
+                    <CardTitle className="text-base sm:text-lg truncate">{cls.name}</CardTitle>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1 ml-6 sm:ml-0">
                     {cls.parent && (
-                      <Badge variant="outline" className="ml-2">
+                      <Badge variant="outline" className="text-xs">
                         in {cls.parent.name}
                       </Badge>
                     )}
-                    <Badge variant="secondary" className="ml-2">
-                      {cls.classAttributes?.length || 0} attributi
+                    <Badge variant="secondary" className="text-xs">
+                      {cls.classAttributes?.length || 0} attr
                     </Badge>
                     {cls._count?.children ? (
-                      <Badge variant="outline" className="ml-1">
+                      <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                         {cls._count.children} sottoclassi
                       </Badge>
                     ) : null}
                     {cls._count?.vaults ? (
-                      <Badge variant="outline" className="ml-1">
+                      <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                         {cls._count.vaults} vault
                       </Badge>
                     ) : null}
-                    <Badge variant={cls.isPublic !== false ? 'secondary' : 'outline'} className="ml-1">
-                      {cls.isPublic !== false ? 'Pubblico' : 'Riservato'}
+                    <Badge variant={cls.isPublic !== false ? 'secondary' : 'outline'} className="text-xs">
+                      {cls.isPublic !== false ? 'Pub' : 'Priv'}
                     </Badge>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 ml-6 sm:ml-0">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setAddAttrToClass(cls.id)}
+                      className="h-8"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Attributo
+                      <Plus className="h-4 w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Attributo</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
                       onClick={() => setEditClass(cls)}
                     >
                       <Pencil className="h-4 w-4" />
@@ -222,6 +226,7 @@ export default function MetadataPage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
                       onClick={() => setDeleteClass(cls)}
                       disabled={cls._count?.vaults && cls._count.vaults > 0}
                     >
@@ -239,24 +244,27 @@ export default function MetadataPage() {
               {expandedClasses.has(cls.id) && (
                 <CardContent className="pt-0">
                   {cls.classAttributes && cls.classAttributes.length > 0 ? (
-                    <div className="border rounded-md">
-                      <table className="w-full">
+                    <div className="border rounded-md overflow-x-auto">
+                      <table className="w-full min-w-[400px]">
                         <thead>
                           <tr className="border-b bg-muted/50">
                             <th className="py-2 px-3 text-left text-sm font-medium">Nome</th>
-                            <th className="py-2 px-3 text-left text-sm font-medium">Etichetta</th>
+                            <th className="py-2 px-3 text-left text-sm font-medium hidden sm:table-cell">Etichetta</th>
                             <th className="py-2 px-3 text-left text-sm font-medium">Tipo</th>
-                            <th className="py-2 px-3 text-center text-sm font-medium">Obbligatorio</th>
-                            <th className="py-2 px-3 text-right text-sm font-medium">Azioni</th>
+                            <th className="py-2 px-3 text-center text-sm font-medium">Req</th>
+                            <th className="py-2 px-3 text-right text-sm font-medium"></th>
                           </tr>
                         </thead>
                         <tbody>
                           {cls.classAttributes.map((ca) => (
                             <tr key={ca.id} className="border-b last:border-0">
-                              <td className="py-2 px-3 font-mono text-sm">{ca.attribute.name}</td>
-                              <td className="py-2 px-3">{ca.attribute.label}</td>
                               <td className="py-2 px-3">
-                                <Badge variant="outline">
+                                <div className="font-mono text-sm">{ca.attribute.name}</div>
+                                <div className="text-xs text-muted-foreground sm:hidden">{ca.attribute.label}</div>
+                              </td>
+                              <td className="py-2 px-3 hidden sm:table-cell">{ca.attribute.label}</td>
+                              <td className="py-2 px-3">
+                                <Badge variant="outline" className="text-xs">
                                   {FIELD_TYPES[ca.attribute.type] || ca.attribute.type}
                                 </Badge>
                               </td>
@@ -267,6 +275,7 @@ export default function MetadataPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  className="h-8 w-8 p-0"
                                   onClick={() =>
                                     removeAttributeMutation.mutate({
                                       classId: cls.id,

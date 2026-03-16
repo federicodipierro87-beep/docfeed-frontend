@@ -46,21 +46,21 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Utenti</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold">Utenti</h1>
+          <p className="text-sm text-muted-foreground">
             Gestisci gli utenti dell'organizzazione
           </p>
         </div>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nuovo Utente
         </Button>
       </div>
 
       {/* Search */}
-      <div className="max-w-sm">
+      <div className="w-full sm:max-w-sm">
         <Input
           placeholder="Cerca utenti..."
           value={search}
@@ -81,15 +81,15 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-lg border bg-card">
-          <table className="w-full">
+        <div className="rounded-lg border bg-card overflow-x-auto">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="py-3 px-4 text-left text-sm font-medium">Utente</th>
-                <th className="py-3 px-4 text-left text-sm font-medium">Email</th>
+                <th className="py-3 px-4 text-left text-sm font-medium hidden sm:table-cell">Email</th>
                 <th className="py-3 px-4 text-left text-sm font-medium">Ruolo</th>
-                <th className="py-3 px-4 text-left text-sm font-medium">Stato</th>
-                <th className="py-3 px-4 text-left text-sm font-medium">Ultimo accesso</th>
+                <th className="py-3 px-4 text-left text-sm font-medium hidden md:table-cell">Stato</th>
+                <th className="py-3 px-4 text-left text-sm font-medium hidden lg:table-cell">Ultimo accesso</th>
                 <th className="py-3 px-4"></th>
               </tr>
             </thead>
@@ -99,19 +99,22 @@ export default function UsersPage() {
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className="flex h-10 w-10 items-center justify-center rounded-full text-white text-sm font-medium"
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-white text-sm font-medium shrink-0"
                         style={{ backgroundColor: roleColors[user.role] || '#6b7280' }}
                       >
                         {getInitials(user.firstName, user.lastName)}
                       </div>
-                      <div>
-                        <p className="font-medium">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">
                           {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-sm text-muted-foreground sm:hidden truncate">
+                          {user.email}
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
+                  <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell">{user.email}</td>
                   <td className="py-3 px-4">
                     <span
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -123,7 +126,7 @@ export default function UsersPage() {
                       {roleLabels[user.role] || user.role}
                     </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 hidden md:table-cell">
                     {user.isActive ? (
                       <span className="inline-flex items-center gap-1 text-green-600">
                         <span className="h-2 w-2 rounded-full bg-green-600" />
@@ -136,7 +139,7 @@ export default function UsersPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-muted-foreground">
+                  <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">
                     {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : 'Mai'}
                   </td>
                   <td className="py-3 px-4">

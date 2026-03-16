@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Bell, User } from 'lucide-react'
+import { Search, Bell, User, Menu } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,7 +14,11 @@ import {
 import { useAuthStore } from '@/store/auth.store'
 import { getInitials } from '@/lib/utils'
 
-export default function TopBar() {
+interface TopBarProps {
+  onMenuClick?: () => void
+}
+
+export default function TopBar({ onMenuClick }: TopBarProps) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
@@ -27,15 +31,25 @@ export default function TopBar() {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6 gap-4">
+      {/* Mobile menu button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden shrink-0"
+        onClick={onMenuClick}
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
       {/* Search */}
       <form onSubmit={handleSearch} className="flex-1 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Cerca documenti... (Cmd+K)"
-            className="pl-10"
+            placeholder="Cerca..."
+            className="pl-10 w-full"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -43,7 +57,7 @@ export default function TopBar() {
       </form>
 
       {/* Actions */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4 shrink-0">
         {/* Notifications */}
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
@@ -52,11 +66,11 @@ export default function TopBar() {
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2">
+            <Button variant="ghost" className="gap-2 px-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
                 {user ? getInitials(user.firstName, user.lastName) : 'U'}
               </div>
-              <span className="hidden md:inline">
+              <span className="hidden lg:inline">
                 {user ? `${user.firstName} ${user.lastName}` : 'Utente'}
               </span>
             </Button>

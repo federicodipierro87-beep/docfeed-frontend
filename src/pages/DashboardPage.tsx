@@ -37,8 +37,8 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Benvenuto, {user?.firstName}!</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold">Benvenuto, {user?.firstName}!</h1>
+        <p className="text-sm text-muted-foreground">
           Ecco una panoramica del tuo sistema documentale
         </p>
       </div>

@@ -79,16 +79,16 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             {vault ? vault.name : 'Tutti i Documenti'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {documents.length} documenti
           </p>
         </div>
-        <Button onClick={() => setUploadOpen(true)}>
+        <Button onClick={() => setUploadOpen(true)} className="w-full sm:w-auto">
           <Upload className="mr-2 h-4 w-4" />
           Carica Documento
         </Button>
@@ -105,34 +105,36 @@ export default function DocumentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex-1">
           <Input
             placeholder="Cerca documenti..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="outline" size="icon">
-          <Filter className="h-4 w-4" />
-        </Button>
-        <div className="flex rounded-md border">
-          <Button
-            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="rounded-r-none"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="shrink-0">
+            <Filter className="h-4 w-4" />
           </Button>
-          <Button
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="rounded-l-none"
-            onClick={() => setViewMode('grid')}
-          >
-            <Grid className="h-4 w-4" />
-          </Button>
+          <div className="flex rounded-md border">
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="rounded-r-none"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="rounded-l-none"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -152,8 +154,8 @@ export default function DocumentsPage() {
           </CardContent>
         </Card>
       ) : viewMode === 'list' ? (
-        <div className="rounded-lg border bg-card">
-          <table className="w-full">
+        <div className="rounded-lg border bg-card overflow-x-auto">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="py-3 px-4 text-left text-sm font-medium">Nome</th>
