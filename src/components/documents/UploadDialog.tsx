@@ -64,6 +64,7 @@ export function UploadDialog({ open, onOpenChange, defaultVaultId }: UploadDialo
         description: 'Il documento è stato caricato con successo',
       })
       queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({ queryKey: ['vaults'] })
       handleClose()
     },
     onError: (error: any) => {
