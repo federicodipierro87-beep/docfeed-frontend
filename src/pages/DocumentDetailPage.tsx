@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import {
@@ -10,6 +11,9 @@ import {
   Unlock,
   ChevronLeft,
   Tag,
+  Eye,
+  FileQuestion,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +23,8 @@ import { formatBytes, formatDateTime, getMimeTypeLabel } from '@/lib/utils'
 
 export default function DocumentDetailPage() {
   const { id } = useParams()
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   const { data: document, isLoading } = useQuery({
     queryKey: ['document', id],
@@ -47,6 +53,105 @@ export default function DocumentDetailPage() {
     } catch (error) {
       console.error('Download error:', error)
     }
+  }
+
+  const loadPreview = async () => {
+    if (!id || previewUrl) return
+    setPreviewLoading(true)
+    try {
+      const response = await documentsApi.download(id)
+      const { url } = response.data.data
+      setPreviewUrl(url)
+    } catch (error) {
+      console.error('Preview error:', error)
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const canPreview = (mimeType: string) => {
+    return (
+      mimeType === 'application/pdf' ||
+      mimeType.startsWith('image/') ||
+      mimeType === 'text/plain' ||
+      mimeType === 'text/html'
+    )
+  }
+
+  const renderPreview = () => {
+    if (previewLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Caricamento anteprima...</p>
+        </div>
+      )
+    }
+
+    if (!document) return null
+
+    if (!canPreview(document.mimeType)) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <FileQuestion className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-lg font-medium">Anteprima non disponibile</p>
+          <p className="text-muted-foreground mb-4">
+            Questo tipo di file ({getMimeTypeLabel(document.mimeType)}) non supporta l'anteprima
+          </p>
+          <Button onClick={handleDownload}>
+            <Download className="h-4 w-4 mr-2" />
+            Scarica per visualizzare
+          </Button>
+        </div>
+      )
+    }
+
+    if (!previewUrl) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Eye className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground mb-4">Clicca per caricare l'anteprima</p>
+          <Button onClick={loadPreview}>
+            <Eye className="h-4 w-4 mr-2" />
+            Carica Anteprima
+          </Button>
+        </div>
+      )
+    }
+
+    if (document.mimeType === 'application/pdf') {
+      return (
+        <iframe
+          src={previewUrl}
+          className="w-full h-[800px] rounded-lg border"
+          title="PDF Preview"
+        />
+      )
+    }
+
+    if (document.mimeType.startsWith('image/')) {
+      return (
+        <div className="flex justify-center">
+          <img
+            src={previewUrl}
+            alt={document.name}
+            className="max-w-full max-h-[800px] rounded-lg border"
+          />
+        </div>
+      )
+    }
+
+    if (document.mimeType === 'text/plain' || document.mimeType === 'text/html') {
+      return (
+        <iframe
+          src={previewUrl}
+          className="w-full h-[600px] rounded-lg border bg-white"
+          title="Text Preview"
+        />
+      )
+    }
+
+    return null
   }
 
   if (isLoading) {
@@ -155,12 +260,24 @@ export default function DocumentDetailPage() {
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Dettagli</TabsTrigger>
+          <TabsTrigger value="preview" onClick={loadPreview}>
+            <Eye className="h-4 w-4 mr-2" />
+            Anteprima
+          </TabsTrigger>
           <TabsTrigger value="versions">
             <History className="h-4 w-4 mr-2" />
             Versioni ({versions?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="preview" className="mt-6">
+          <Card>
+            <CardContent className="p-6">
+              {renderPreview()}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="details" className="mt-6">
           <div className="grid gap-6 lg:grid-cols-2">
