@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   FileText,
   FolderOpen,
+  FolderSearch,
   Search,
   Trash2,
   Users,
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button'
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Documenti', href: '/documents', icon: FileText },
+  { name: 'Viste', href: '/views', icon: FolderSearch },
   { name: 'Ricerca', href: '/search', icon: Search },
   { name: 'Cestino', href: '/trash', icon: Trash2 },
 ]

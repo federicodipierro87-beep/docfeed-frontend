@@ -316,6 +316,35 @@ export const tagsApi = {
     api.delete(`/tags/${id}`),
 }
 
+// === SAVED VIEWS API ===
+
+export const viewsApi = {
+  list: () =>
+    api.get('/views'),
+
+  get: (id: string) =>
+    api.get(`/views/${id}`),
+
+  execute: (id: string) =>
+    api.get(`/views/${id}/execute`),
+
+  create: (data: {
+    name: string
+    description?: string
+    icon?: string
+    color?: string
+    filters: Record<string, any>
+    isPublic?: boolean
+  }) =>
+    api.post('/views', data),
+
+  update: (id: string, data: Record<string, any>) =>
+    api.patch(`/views/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/views/${id}`),
+}
+
 // === USER GROUPS API ===
 
 export const userGroupsApi = {

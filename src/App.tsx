@@ -16,6 +16,7 @@ import AttributesPage from '@/pages/AttributesPage'
 import MetadataPage from '@/pages/MetadataPage'
 import StructurePage from '@/pages/StructurePage'
 import UserGroupsPage from '@/pages/UserGroupsPage'
+import ViewsPage from '@/pages/ViewsPage'
 import SettingsPage from '@/pages/SettingsPage'
 
 // Layout
@@ -99,6 +100,7 @@ export default function App() {
           />
           <Route path="search" element={<SearchPage />} />
           <Route path="trash" element={<TrashPage />} />
+          <Route path="views" element={<ViewsPage />} />
           <Route path="settings" element={<SettingsPage />} />
 
           {/* Admin routes */}
