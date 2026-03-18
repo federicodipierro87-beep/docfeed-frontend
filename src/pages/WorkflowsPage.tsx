@@ -4,6 +4,7 @@ import { GitBranch, Plus, Settings, FileText, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WorkflowConfigDialog } from '@/components/workflows/WorkflowConfigDialog'
+import { CreateWorkflowDialog } from '@/components/workflows/CreateWorkflowDialog'
 import { workflowsApi } from '@/lib/api'
 
 interface WorkflowState {
@@ -36,6 +37,7 @@ interface Workflow {
 
 export default function WorkflowsPage() {
   const [configWorkflow, setConfigWorkflow] = useState<Workflow | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
 
   const { data: workflows, isLoading } = useQuery({
     queryKey: ['workflows'],
@@ -60,7 +62,7 @@ export default function WorkflowsPage() {
             Gestisci i flussi di approvazione documenti
           </p>
         </div>
-        <Button className="w-full sm:w-auto">
+        <Button className="w-full sm:w-auto" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nuovo Workflow
         </Button>
@@ -160,7 +162,7 @@ export default function WorkflowsPage() {
             <p className="text-muted-foreground">
               Crea il tuo primo workflow per gestire l'approvazione documenti
             </p>
-            <Button className="mt-4">
+            <Button className="mt-4" onClick={() => setCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Crea Workflow
             </Button>
@@ -173,6 +175,12 @@ export default function WorkflowsPage() {
         open={!!configWorkflow}
         onOpenChange={(open) => !open && setConfigWorkflow(null)}
         workflow={configWorkflow}
+      />
+
+      {/* Create Dialog */}
+      <CreateWorkflowDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
       />
     </div>
   )
