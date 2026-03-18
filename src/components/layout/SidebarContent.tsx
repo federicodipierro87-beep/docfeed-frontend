@@ -10,7 +10,6 @@ import {
   GitBranch,
   Tags,
   Database,
-  Network,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -32,12 +31,11 @@ const onlyAdminNavigation = [
 
 // Per ADMIN e MANAGER
 const adminNavigation = [
+  { name: 'Classi', href: '/metadata', icon: Database },
+  { name: 'Attributi', href: '/attributes', icon: Tags },
   { name: 'Utenti', href: '/users', icon: Users },
   { name: 'Gruppi', href: '/user-groups', icon: UsersRound },
   { name: 'Workflow', href: '/workflows', icon: GitBranch },
-  { name: 'Attributi', href: '/attributes', icon: Tags },
-  { name: 'Classi', href: '/metadata', icon: Database },
-  { name: 'Struttura', href: '/structure', icon: Network },
 ]
 
 interface SidebarContentProps {
