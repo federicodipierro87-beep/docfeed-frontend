@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, Plus, MoreVertical, Shield, ShieldOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -10,8 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { EditUserDialog } from '@/components/users/EditUserDialog'
 import { usersApi } from '@/lib/api'
 import { formatDateTime, getInitials } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 const roleLabels: Record<string, string> = {
   ADMIN: 'Amministratore',
@@ -29,6 +31,16 @@ const roleColors: Record<string, string> = {
 
 export default function UsersPage() {
   const [search, setSearch] = useState('')
+  const [editUser, setEditUser] = useState<{
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+    role: string
+  } | null>(null)
+
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: ['users', search],
@@ -42,6 +54,36 @@ export default function UsersPage() {
   })
 
   const users = usersData?.items || []
+
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => usersApi.deactivate(id),
+    onSuccess: () => {
+      toast({ title: 'Utente disattivato' })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: error.response?.data?.error || 'Errore durante la disattivazione',
+        variant: 'destructive',
+      })
+    },
+  })
+
+  const activateMutation = useMutation({
+    mutationFn: (id: string) => usersApi.activate(id),
+    onSuccess: () => {
+      toast({ title: 'Utente riattivato' })
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: error.response?.data?.error || 'Errore durante la riattivazione',
+        variant: 'destructive',
+      })
+    },
+  })
 
   return (
     <div className="space-y-6">
@@ -150,15 +192,31 @@ export default function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Modifica</DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setEditUser({
+                            id: user.id,
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                            email: user.email,
+                            role: user.role,
+                          })}
+                        >
+                          Modifica
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Visualizza audit</DropdownMenuItem>
                         {user.isActive ? (
-                          <DropdownMenuItem className="text-orange-600">
+                          <DropdownMenuItem
+                            className="text-orange-600"
+                            onClick={() => deactivateMutation.mutate(user.id)}
+                          >
                             <ShieldOff className="mr-2 h-4 w-4" />
                             Disattiva
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem className="text-green-600">
+                          <DropdownMenuItem
+                            className="text-green-600"
+                            onClick={() => activateMutation.mutate(user.id)}
+                          >
                             <Shield className="mr-2 h-4 w-4" />
                             Riattiva
                           </DropdownMenuItem>
@@ -172,6 +230,13 @@ export default function UsersPage() {
           </table>
         </div>
       )}
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        open={!!editUser}
+        onOpenChange={(open) => !open && setEditUser(null)}
+        user={editUser}
+      />
     </div>
   )
 }
