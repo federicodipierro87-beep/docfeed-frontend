@@ -55,9 +55,9 @@ export default function DocumentsPage() {
 
     const apiUrl = import.meta.env.VITE_API_URL || '/api'
 
-    // Apri direttamente l'URL - il browser aprirà il file .eml con il programma predefinito
+    // Apri in nuova finestra - il browser aprirà il file .eml con il programma predefinito
     const emailUrl = `${apiUrl}/documents/${doc.id}/email?token=${token}`
-    window.location.href = emailUrl
+    window.open(emailUrl, '_blank')
   }
 
   const deleteMutation = useMutation({
