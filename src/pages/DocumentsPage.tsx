@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
-import { FileText, Upload, Grid, List, Filter, Eye, Trash2, Loader2 } from 'lucide-react'
+import { FileText, Upload, Grid, List, Filter, Eye, Trash2, Loader2, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -37,6 +37,42 @@ export default function DocumentsPage() {
   const openPreview = (doc: any) => {
     setPreviewDoc({ id: doc.id, name: doc.name, mimeType: doc.mimeType })
     setPreviewOpen(true)
+  }
+
+  const handleSendEmail = async (doc: any) => {
+    try {
+      // Download the document first
+      const response = await documentsApi.download(doc.id)
+      const downloadUrl = response.data.data.url
+
+      // Trigger download
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = doc.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Open email client with subject
+      const subject = encodeURIComponent(doc.name)
+      const body = encodeURIComponent(
+        `In allegato il documento: ${doc.name}\n\n` +
+        `(Il documento è stato scaricato, trascinalo nella mail per allegarlo)`
+      )
+
+      // Small delay to ensure download starts first
+      setTimeout(() => {
+        window.location.href = `mailto:?subject=${subject}&body=${body}`
+      }, 500)
+
+      toast({ title: 'Documento scaricato', description: 'Allega il file scaricato alla mail' })
+    } catch (error: any) {
+      toast({
+        title: 'Errore',
+        description: error.response?.data?.error || 'Errore durante il download',
+        variant: 'destructive',
+      })
+    }
   }
 
   const deleteMutation = useMutation({
@@ -171,11 +207,14 @@ export default function DocumentsPage() {
                 <th className="py-3 px-4 text-left text-sm font-medium">
                   Modificato
                 </th>
-                <th className="py-3 px-4 text-center text-sm font-medium w-16">
-                  Anteprima
+                <th className="py-3 px-4 text-center text-sm font-medium w-12">
+                  <Eye className="h-4 w-4 mx-auto" />
                 </th>
-                <th className="py-3 px-4 text-center text-sm font-medium w-16">
-                  Elimina
+                <th className="py-3 px-4 text-center text-sm font-medium w-12">
+                  <Mail className="h-4 w-4 mx-auto" />
+                </th>
+                <th className="py-3 px-4 text-center text-sm font-medium w-12">
+                  <Trash2 className="h-4 w-4 mx-auto" />
                 </th>
               </tr>
             </thead>
@@ -232,6 +271,19 @@ export default function DocumentsPage() {
                       title="Anteprima"
                     >
                       <Eye className="h-4 w-4" />
+                    </Button>
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleSendEmail(doc)
+                      }}
+                      title="Invia via email"
+                    >
+                      <Mail className="h-4 w-4" />
                     </Button>
                   </td>
                   <td className="py-3 px-4 text-center">
