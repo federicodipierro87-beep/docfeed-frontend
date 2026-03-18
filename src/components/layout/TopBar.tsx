@@ -31,7 +31,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6 gap-4">
+    <header className="flex h-16 items-center justify-between border-b bg-header px-4 md:px-6 gap-4">
       {/* Mobile menu button */}
       <Button
         variant="ghost"

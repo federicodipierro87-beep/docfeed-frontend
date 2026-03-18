@@ -15,7 +15,7 @@ export default function MainLayout() {
 
       {/* Mobile Sidebar (Sheet) */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="w-64 p-0 bg-sidebar">
           <SidebarContent onNavigate={() => setMobileMenuOpen(false)} />
         </SheetContent>
       </Sheet>
