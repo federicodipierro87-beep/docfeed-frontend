@@ -176,6 +176,19 @@ export const vaultsApi = {
 
   stats: (id: string) =>
     api.get(`/vaults/${id}/stats`),
+
+  // Membri vault
+  listMembers: (id: string) =>
+    api.get(`/vaults/${id}/members`),
+
+  addMember: (vaultId: string, userId: string, canEdit?: boolean) =>
+    api.post(`/vaults/${vaultId}/members`, { userId, canEdit }),
+
+  updateMember: (vaultId: string, userId: string, canEdit: boolean) =>
+    api.patch(`/vaults/${vaultId}/members/${userId}`, { canEdit }),
+
+  removeMember: (vaultId: string, userId: string) =>
+    api.delete(`/vaults/${vaultId}/members/${userId}`),
 }
 
 // === SEARCH API ===

@@ -20,40 +20,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { documentsApi, vaultsApi } from '@/lib/api'
+import { documentsApi, metadataApi } from '@/lib/api'
 import { formatBytes } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+
+interface MetadataClass {
+  id: string
+  name: string
+  description?: string
+  vaultId?: string
+  vault?: {
+    id: string
+    name: string
+  }
+}
 
 interface UploadDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultVaultId?: string
+  defaultClassId?: string
 }
 
-export function UploadDialog({ open, onOpenChange, defaultVaultId }: UploadDialogProps) {
+export function UploadDialog({ open, onOpenChange, defaultClassId }: UploadDialogProps) {
   const [file, setFile] = useState<File | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [vaultId, setVaultId] = useState(defaultVaultId || '')
+  const [classId, setClassId] = useState(defaultClassId || '')
 
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  const { data: vaultsData } = useQuery({
-    queryKey: ['vaults'],
-    queryFn: () => vaultsApi.list().then((r) => r.data.data),
+  const { data: classesData } = useQuery({
+    queryKey: ['metadata-classes'],
+    queryFn: () => metadataApi.listClasses().then((r) => r.data.data),
   })
 
-  const vaults = vaultsData || []
+  const classes: MetadataClass[] = classesData || []
+
+  // Trova il vaultId dalla classe selezionata
+  const selectedClass = classes.find((c) => c.id === classId)
+  const vaultId = selectedClass?.vaultId || selectedClass?.vault?.id || ''
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!file || !vaultId) throw new Error('File e vault richiesti')
+      if (!file || !classId) throw new Error('File e classe richiesti')
+      if (!vaultId) throw new Error('La classe selezionata non ha un vault associato')
 
       const formData = new FormData()
       formData.append('file', file)
       formData.append('name', name || file.name)
       formData.append('vaultId', vaultId)
+      formData.append('metadataClassId', classId)
       if (description) formData.append('description', description)
 
       return documentsApi.create(formData)
@@ -96,7 +113,7 @@ export function UploadDialog({ open, onOpenChange, defaultVaultId }: UploadDialo
     setFile(null)
     setName('')
     setDescription('')
-    if (!defaultVaultId) setVaultId('')
+    if (!defaultClassId) setClassId('')
     onOpenChange(false)
   }
 
@@ -181,21 +198,31 @@ export function UploadDialog({ open, onOpenChange, defaultVaultId }: UploadDialo
             />
           </div>
 
-          {/* Vault */}
+          {/* Classe Documentale */}
           <div className="space-y-2">
-            <Label>Vault</Label>
-            <Select value={vaultId} onValueChange={setVaultId}>
+            <Label>Classe Documentale</Label>
+            <Select value={classId} onValueChange={setClassId}>
               <SelectTrigger>
-                <SelectValue placeholder="Seleziona un vault" />
+                <SelectValue placeholder="Seleziona una classe" />
               </SelectTrigger>
               <SelectContent>
-                {vaults.map((vault: any) => (
-                  <SelectItem key={vault.id} value={vault.id}>
-                    {vault.name}
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.name}
+                    {cls.vault && (
+                      <span className="text-muted-foreground ml-2">
+                        ({cls.vault.name})
+                      </span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {classId && !vaultId && (
+              <p className="text-sm text-destructive">
+                Questa classe non ha un vault associato. Contatta l'amministratore.
+              </p>
+            )}
           </div>
 
           <DialogFooter>
@@ -204,7 +231,7 @@ export function UploadDialog({ open, onOpenChange, defaultVaultId }: UploadDialo
             </Button>
             <Button
               type="submit"
-              disabled={!file || !vaultId || uploadMutation.isPending}
+              disabled={!file || !classId || !vaultId || uploadMutation.isPending}
             >
               {uploadMutation.isPending ? (
                 <>

@@ -42,7 +42,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { metadataApi, attributesApi, usersApi } from '@/lib/api'
+import { metadataApi, attributesApi, usersApi, vaultsApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 
 const FIELD_TYPES: Record<string, string> = {
@@ -84,10 +84,17 @@ interface ClassAttribute {
   attribute: Attribute
 }
 
+interface Vault {
+  id: string
+  name: string
+}
+
 interface MetadataClass {
   id: string
   name: string
   description?: string
+  vaultId?: string | null
+  vault?: Vault | null
   parentId?: string | null
   parent?: { id: string; name: string } | null
   children?: { id: string; name: string }[]
@@ -95,7 +102,7 @@ interface MetadataClass {
   allowedRoles?: string | string[]
   allowedUserIds?: string | string[]
   classAttributes: ClassAttribute[]
-  _count?: { vaults: number; children?: number }
+  _count?: { vaultsUsingThis: number; children?: number }
 }
 
 export default function MetadataPage() {
@@ -183,6 +190,11 @@ export default function MetadataPage() {
                     <CardTitle className="text-base sm:text-lg truncate">{cls.name}</CardTitle>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 ml-6 sm:ml-0">
+                    {cls.vault && (
+                      <Badge variant="default" className="text-xs">
+                        {cls.vault.name}
+                      </Badge>
+                    )}
                     {cls.parent && (
                       <Badge variant="outline" className="text-xs">
                         in {cls.parent.name}
@@ -196,9 +208,9 @@ export default function MetadataPage() {
                         {cls._count.children} sottoclassi
                       </Badge>
                     ) : null}
-                    {cls._count?.vaults ? (
+                    {cls._count?.vaultsUsingThis ? (
                       <Badge variant="outline" className="text-xs hidden sm:inline-flex">
-                        {cls._count.vaults} vault
+                        {cls._count.vaultsUsingThis} vault
                       </Badge>
                     ) : null}
                     <Badge variant={cls.isPublic !== false ? 'secondary' : 'outline'} className="text-xs">
@@ -228,7 +240,7 @@ export default function MetadataPage() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => setDeleteClass(cls)}
-                      disabled={cls._count?.vaults && cls._count.vaults > 0}
+                      disabled={cls._count?.vaultsUsingThis && cls._count.vaultsUsingThis > 0}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -366,6 +378,7 @@ function CreateClassDialog({
 }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [vaultId, setVaultId] = useState<string | null>(null)
   const [parentId, setParentId] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
   const [allowedRoles, setAllowedRoles] = useState<string[]>([])
@@ -381,6 +394,13 @@ function CreateClassDialog({
     enabled: open,
   })
 
+  // Fetch vaults for assignment
+  const { data: vaults } = useQuery({
+    queryKey: ['vaults'],
+    queryFn: () => vaultsApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
   // Fetch classes for parent selection
   const { data: allClasses } = useQuery({
     queryKey: ['metadata-classes'],
@@ -391,6 +411,7 @@ function CreateClassDialog({
   const createMutation = useMutation({
     mutationFn: () => {
       const data: any = { name, description: description || undefined, isPublic }
+      if (vaultId) data.vaultId = vaultId
       if (parentId) data.parentId = parentId
       if (!isPublic) {
         if (allowedRoles.length > 0) data.allowedRoles = allowedRoles
@@ -404,6 +425,7 @@ function CreateClassDialog({
       onOpenChange(false)
       setName('')
       setDescription('')
+      setVaultId(null)
       setParentId(null)
       setIsPublic(true)
       setAllowedRoles([])
@@ -452,6 +474,30 @@ function CreateClassDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descrizione della classe"
             />
+          </div>
+
+          {/* Vault */}
+          <div className="space-y-2">
+            <Label>Vault *</Label>
+            <Select
+              value={vaultId || 'none'}
+              onValueChange={(value) => setVaultId(value === 'none' ? null : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona vault" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nessuno</SelectItem>
+                {vaults?.map((vault: Vault) => (
+                  <SelectItem key={vault.id} value={vault.id}>
+                    {vault.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              I documenti di questa classe saranno archiviati nel vault selezionato
+            </p>
           </div>
 
           {/* Classe Padre */}
@@ -576,6 +622,7 @@ function EditClassDialog({
 }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [vaultId, setVaultId] = useState<string | null>(null)
   const [parentId, setParentId] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
   const [allowedRoles, setAllowedRoles] = useState<string[]>([])
@@ -588,6 +635,13 @@ function EditClassDialog({
   const { data: users } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersApi.list().then((r) => r.data.data),
+    enabled: open,
+  })
+
+  // Fetch vaults for assignment
+  const { data: vaults } = useQuery({
+    queryKey: ['vaults'],
+    queryFn: () => vaultsApi.list().then((r) => r.data.data),
     enabled: open,
   })
 
@@ -616,6 +670,7 @@ function EditClassDialog({
   if (metadataClass && name !== metadataClass.name) {
     setName(metadataClass.name)
     setDescription(metadataClass.description || '')
+    setVaultId(metadataClass.vaultId || null)
     setParentId(metadataClass.parentId || null)
     setIsPublic(metadataClass.isPublic !== false)
     setAllowedRoles(parseJsonArray(metadataClass.allowedRoles))
@@ -632,7 +687,7 @@ function EditClassDialog({
 
   const updateMutation = useMutation({
     mutationFn: () => {
-      const data: any = { name, description: description || null, parentId, isPublic }
+      const data: any = { name, description: description || null, vaultId, parentId, isPublic }
       if (!isPublic) {
         data.allowedRoles = allowedRoles.length > 0 ? allowedRoles : null
         data.allowedUserIds = allowedUserIds.length > 0 ? allowedUserIds : null
@@ -685,6 +740,30 @@ function EditClassDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Vault */}
+          <div className="space-y-2">
+            <Label>Vault *</Label>
+            <Select
+              value={vaultId || 'none'}
+              onValueChange={(value) => setVaultId(value === 'none' ? null : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona vault" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nessuno</SelectItem>
+                {vaults?.map((vault: Vault) => (
+                  <SelectItem key={vault.id} value={vault.id}>
+                    {vault.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              I documenti di questa classe saranno archiviati nel vault selezionato
+            </p>
           </div>
 
           {/* Classe Padre */}
