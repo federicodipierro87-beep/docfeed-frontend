@@ -20,17 +20,22 @@ import { Button } from '@/components/ui/button'
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Documenti', href: '/documents', icon: FileText },
-  { name: 'Vault', href: '/vaults', icon: FolderOpen },
   { name: 'Ricerca', href: '/search', icon: Search },
   { name: 'Cestino', href: '/trash', icon: Trash2 },
 ]
 
+// Solo per ADMIN
+const onlyAdminNavigation = [
+  { name: 'Vault', href: '/vaults', icon: FolderOpen },
+]
+
+// Per ADMIN e MANAGER
 const adminNavigation = [
-  { name: 'Struttura', href: '/structure', icon: Network },
   { name: 'Utenti', href: '/users', icon: Users },
   { name: 'Workflow', href: '/workflows', icon: GitBranch },
   { name: 'Attributi', href: '/attributes', icon: Tags },
   { name: 'Classi', href: '/metadata', icon: Database },
+  { name: 'Struttura', href: '/structure', icon: Network },
 ]
 
 interface SidebarContentProps {
@@ -40,6 +45,7 @@ interface SidebarContentProps {
 export default function SidebarContent({ onNavigate }: SidebarContentProps) {
   const { user, logout } = useAuthStore()
 
+  const isOnlyAdmin = user?.role === 'ADMIN'
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER'
 
   const handleClick = () => {
@@ -80,6 +86,24 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
             <p className="mb-2 px-3 text-xs font-semibold uppercase text-muted-foreground">
               Amministrazione
             </p>
+            {isOnlyAdmin && onlyAdminNavigation.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.href}
+                onClick={handleClick}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )
+                }
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+              </NavLink>
+            ))}
             {adminNavigation.map((item) => (
               <NavLink
                 key={item.name}

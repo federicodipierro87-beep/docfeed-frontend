@@ -20,7 +20,7 @@ export default function VaultsPage() {
   } | null>(null)
 
   const { user } = useAuthStore()
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  const isAdmin = user?.role === 'ADMIN'
 
   const { data: vaults, isLoading } = useQuery({
     queryKey: ['vaults'],

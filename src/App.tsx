@@ -39,11 +39,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// Admin Route wrapper
+// Admin Route wrapper (ADMIN e MANAGER)
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore()
 
   if (user?.role !== 'ADMIN' && user?.role !== 'MANAGER') {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
+
+// Only Admin Route wrapper (solo ADMIN)
+function OnlyAdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore()
+
+  if (user?.role !== 'ADMIN') {
     return <Navigate to="/" replace />
   }
 
@@ -69,8 +80,22 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="documents" element={<DocumentsPage />} />
           <Route path="documents/:id" element={<DocumentDetailPage />} />
-          <Route path="vaults" element={<VaultsPage />} />
-          <Route path="vaults/:id" element={<DocumentsPage />} />
+          <Route
+            path="vaults"
+            element={
+              <OnlyAdminRoute>
+                <VaultsPage />
+              </OnlyAdminRoute>
+            }
+          />
+          <Route
+            path="vaults/:id"
+            element={
+              <OnlyAdminRoute>
+                <DocumentsPage />
+              </OnlyAdminRoute>
+            }
+          />
           <Route path="search" element={<SearchPage />} />
           <Route path="trash" element={<TrashPage />} />
           <Route path="settings" element={<SettingsPage />} />

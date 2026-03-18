@@ -46,7 +46,7 @@ export default function StructurePage() {
   const [createVaultOpen, setCreateVaultOpen] = useState(false)
 
   const { user } = useAuthStore()
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  const isAdmin = user?.role === 'ADMIN'
 
   // Fetch vaults
   const { data: vaults, isLoading: vaultsLoading } = useQuery({
