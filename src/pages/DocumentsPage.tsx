@@ -39,25 +39,32 @@ export default function DocumentsPage() {
     setPreviewOpen(true)
   }
 
-  const handleSendEmail = (doc: any) => {
-    // Ottieni il token dallo storage Zustand
-    const stored = localStorage.getItem('docuvault-auth')
-    const token = stored ? JSON.parse(stored)?.state?.accessToken : null
+  const handleSendEmail = async (doc: any) => {
+    try {
+      const response = await documentsApi.email(doc.id)
+      const blob = response.data
 
-    if (!token) {
+      // Crea link per download
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${doc.name}.eml`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: 'Bozza email scaricata',
+        description: 'Apri il file .eml scaricato per comporre la mail con Thunderbird',
+      })
+    } catch (error: any) {
       toast({
         title: 'Errore',
-        description: 'Sessione scaduta, effettua nuovamente il login',
+        description: error.response?.data?.error || 'Errore durante la preparazione',
         variant: 'destructive',
       })
-      return
     }
-
-    const apiUrl = import.meta.env.VITE_API_URL || '/api'
-
-    // Apri in nuova finestra - il browser aprirà il file .eml con il programma predefinito
-    const emailUrl = `${apiUrl}/documents/${doc.id}/email?token=${token}`
-    window.open(emailUrl, '_blank')
   }
 
   const deleteMutation = useMutation({
