@@ -151,6 +151,9 @@ export const documentsApi = {
 
   trash: (params?: Record<string, string | number>) =>
     api.get('/documents/trash', { params }),
+
+  email: (id: string) =>
+    api.get(`/documents/${id}/email`, { responseType: 'blob' }),
 }
 
 // === VAULTS API ===
