@@ -39,33 +39,25 @@ export default function DocumentsPage() {
     setPreviewOpen(true)
   }
 
-  const handleSendEmail = async (doc: any) => {
-    try {
-      // Richiedi il file .eml dal backend
-      const response = await documentsApi.email(doc.id)
-      const blob = response.data
+  const handleSendEmail = (doc: any) => {
+    // Ottieni il token dallo storage Zustand
+    const stored = localStorage.getItem('docuvault-auth')
+    const token = stored ? JSON.parse(stored)?.state?.accessToken : null
 
-      // Scarica il file .eml
-      const emlUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = emlUrl
-      link.download = `${doc.name}.eml`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(emlUrl)
-
-      toast({
-        title: 'File email creato',
-        description: 'Apri il file .eml scaricato per comporre la mail'
-      })
-    } catch (error: any) {
+    if (!token) {
       toast({
         title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante la preparazione',
+        description: 'Sessione scaduta, effettua nuovamente il login',
         variant: 'destructive',
       })
+      return
     }
+
+    const apiUrl = import.meta.env.VITE_API_URL || '/api'
+
+    // Apri direttamente l'URL - il browser aprirà il file .eml con il programma predefinito
+    const emailUrl = `${apiUrl}/documents/${doc.id}/email?token=${token}`
+    window.location.href = emailUrl
   }
 
   const deleteMutation = useMutation({
