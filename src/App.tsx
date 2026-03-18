@@ -15,6 +15,7 @@ import WorkflowsPage from '@/pages/WorkflowsPage'
 import AttributesPage from '@/pages/AttributesPage'
 import MetadataPage from '@/pages/MetadataPage'
 import StructurePage from '@/pages/StructurePage'
+import UserGroupsPage from '@/pages/UserGroupsPage'
 import SettingsPage from '@/pages/SettingsPage'
 
 // Layout
@@ -106,6 +107,14 @@ export default function App() {
             element={
               <AdminRoute>
                 <UsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="user-groups"
+            element={
+              <AdminRoute>
+                <UserGroupsPage />
               </AdminRoute>
             }
           />

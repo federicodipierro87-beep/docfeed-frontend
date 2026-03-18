@@ -6,6 +6,7 @@ import {
   Search,
   Trash2,
   Users,
+  UsersRound,
   GitBranch,
   Tags,
   Database,
@@ -32,6 +33,7 @@ const onlyAdminNavigation = [
 // Per ADMIN e MANAGER
 const adminNavigation = [
   { name: 'Utenti', href: '/users', icon: Users },
+  { name: 'Gruppi', href: '/user-groups', icon: UsersRound },
   { name: 'Workflow', href: '/workflows', icon: GitBranch },
   { name: 'Attributi', href: '/attributes', icon: Tags },
   { name: 'Classi', href: '/metadata', icon: Database },

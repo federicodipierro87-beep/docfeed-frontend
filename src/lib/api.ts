@@ -316,6 +316,31 @@ export const tagsApi = {
     api.delete(`/tags/${id}`),
 }
 
+// === USER GROUPS API ===
+
+export const userGroupsApi = {
+  list: () =>
+    api.get('/user-groups'),
+
+  get: (id: string) =>
+    api.get(`/user-groups/${id}`),
+
+  create: (data: { name: string; description?: string; color?: string }) =>
+    api.post('/user-groups', data),
+
+  update: (id: string, data: { name?: string; description?: string; color?: string }) =>
+    api.patch(`/user-groups/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/user-groups/${id}`),
+
+  addMember: (groupId: string, userId: string) =>
+    api.post(`/user-groups/${groupId}/members`, { userId }),
+
+  removeMember: (groupId: string, userId: string) =>
+    api.delete(`/user-groups/${groupId}/members/${userId}`),
+}
+
 // === USERS API ===
 
 export const usersApi = {
