@@ -41,35 +41,63 @@ export default function DocumentsPage() {
 
   const handleSendEmail = async (doc: any) => {
     try {
-      // Download the document first
+      // Get the download URL
       const response = await documentsApi.download(doc.id)
       const downloadUrl = response.data.data.url
 
-      // Trigger download
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = doc.name
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      // Fetch the actual file content
+      const fileResponse = await fetch(downloadUrl)
+      const blob = await fileResponse.blob()
 
-      // Open email client with subject
-      const subject = encodeURIComponent(doc.name)
-      const body = encodeURIComponent(
-        `In allegato il documento: ${doc.name}\n\n` +
-        `(Il documento è stato scaricato, trascinalo nella mail per allegarlo)`
-      )
+      // Convert blob to base64
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64Data = (reader.result as string).split(',')[1]
 
-      // Small delay to ensure download starts first
-      setTimeout(() => {
-        window.location.href = `mailto:?subject=${subject}&body=${body}`
-      }, 500)
+        // Create .eml file content with attachment
+        const boundary = '----=_Part_0_' + Date.now()
+        const emlContent = [
+          'MIME-Version: 1.0',
+          `Subject: ${doc.name}`,
+          'X-Unsent: 1',
+          `Content-Type: multipart/mixed; boundary="${boundary}"`,
+          '',
+          `--${boundary}`,
+          'Content-Type: text/plain; charset=UTF-8',
+          'Content-Transfer-Encoding: 7bit',
+          '',
+          `In allegato: ${doc.name}`,
+          '',
+          `--${boundary}`,
+          `Content-Type: ${doc.mimeType}; name="${doc.name}"`,
+          'Content-Transfer-Encoding: base64',
+          `Content-Disposition: attachment; filename="${doc.name}"`,
+          '',
+          base64Data,
+          `--${boundary}--`,
+        ].join('\r\n')
 
-      toast({ title: 'Documento scaricato', description: 'Allega il file scaricato alla mail' })
+        // Download the .eml file
+        const emlBlob = new Blob([emlContent], { type: 'message/rfc822' })
+        const emlUrl = URL.createObjectURL(emlBlob)
+        const link = document.createElement('a')
+        link.href = emlUrl
+        link.download = `${doc.name}.eml`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(emlUrl)
+
+        toast({
+          title: 'File email creato',
+          description: 'Apri il file .eml scaricato per comporre la mail'
+        })
+      }
+      reader.readAsDataURL(blob)
     } catch (error: any) {
       toast({
         title: 'Errore',
-        description: error.response?.data?.error || 'Errore durante il download',
+        description: error.response?.data?.error || 'Errore durante la preparazione',
         variant: 'destructive',
       })
     }
