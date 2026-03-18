@@ -9,6 +9,7 @@ import {
   GitBranch,
   Tags,
   Database,
+  Network,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const navigation = [
 ]
 
 const adminNavigation = [
+  { name: 'Struttura', href: '/structure', icon: Network },
   { name: 'Utenti', href: '/users', icon: Users },
   { name: 'Workflow', href: '/workflows', icon: GitBranch },
   { name: 'Attributi', href: '/attributes', icon: Tags },
