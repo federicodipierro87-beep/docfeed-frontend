@@ -338,6 +338,24 @@ export default function ViewsPage() {
               onChange={(e) => updateFilter('createdBefore', e.target.value)}
             />
           </div>
+
+          <div className="space-y-2">
+            <Label>Modificato dopo</Label>
+            <Input
+              type="date"
+              value={filters.updatedAfter || ''}
+              onChange={(e) => updateFilter('updatedAfter', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Modificato prima</Label>
+            <Input
+              type="date"
+              value={filters.updatedBefore || ''}
+              onChange={(e) => updateFilter('updatedBefore', e.target.value)}
+            />
+          </div>
         </div>
       )}
     </div>
