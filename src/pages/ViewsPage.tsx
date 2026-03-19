@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -55,14 +56,14 @@ const colors = [
 ]
 
 const statusOptions = [
-  { value: '', label: 'Tutti gli stati' },
+  { value: '_all', label: 'Tutti gli stati' },
   { value: 'DRAFT', label: 'Bozza' },
   { value: 'ACTIVE', label: 'Attivo' },
   { value: 'ARCHIVED', label: 'Archiviato' },
 ]
 
 const mimeTypeOptions = [
-  { value: '', label: 'Tutti i tipi' },
+  { value: '_all', label: 'Tutti i tipi' },
   { value: 'application/pdf', label: 'PDF' },
   { value: 'image/', label: 'Immagini' },
   { value: 'text/', label: 'Testo' },
@@ -223,7 +224,7 @@ export default function ViewsPage() {
 
   const updateFilter = (key: string, value: any) => {
     setFilters((prev) => {
-      if (value === '' || value === null || value === undefined) {
+      if (value === '' || value === null || value === undefined || value === '_all') {
         const { [key]: _, ...rest } = prev
         return rest
       }
@@ -256,14 +257,14 @@ export default function ViewsPage() {
           <div className="space-y-2">
             <Label>Vault</Label>
             <Select
-              value={filters.vaultId || ''}
+              value={filters.vaultId || '_all'}
               onValueChange={(v) => updateFilter('vaultId', v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Tutti i vault" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti i vault</SelectItem>
+                <SelectItem value="_all">Tutti i vault</SelectItem>
                 {vaults?.map((v: any) => (
                   <SelectItem key={v.id} value={v.id}>
                     {v.name}
@@ -276,7 +277,7 @@ export default function ViewsPage() {
           <div className="space-y-2">
             <Label>Stato</Label>
             <Select
-              value={filters.status || ''}
+              value={filters.status || '_all'}
               onValueChange={(v) => updateFilter('status', v)}
             >
               <SelectTrigger>
@@ -295,7 +296,7 @@ export default function ViewsPage() {
           <div className="space-y-2">
             <Label>Tipo file</Label>
             <Select
-              value={filters.mimeType || ''}
+              value={filters.mimeType || '_all'}
               onValueChange={(v) => updateFilter('mimeType', v)}
             >
               <SelectTrigger>
@@ -523,6 +524,9 @@ export default function ViewsPage() {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nuova Vista</DialogTitle>
+            <DialogDescription>
+              Crea una vista per salvare una ricerca con filtri personalizzati
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
@@ -590,6 +594,9 @@ export default function ViewsPage() {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifica Vista</DialogTitle>
+            <DialogDescription>
+              Modifica i filtri e le impostazioni della vista
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4">
             <div className="space-y-2">
