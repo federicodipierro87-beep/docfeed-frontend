@@ -76,9 +76,26 @@
   * {
     @apply border-border;
   }
+  html, body, #root {
+    @apply h-full;
+  }
   body {
     @apply bg-background text-foreground;
+    /* Prevent overscroll/bounce on mobile */
+    overscroll-behavior: none;
   }
+}
+
+/* Support for dvh (dynamic viewport height) on mobile */
+@supports (height: 100dvh) {
+  html, body, #root {
+    height: 100dvh;
+  }
+}
+
+/* Safe area padding for mobile devices with notch */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* Scrollbar personalizzata */

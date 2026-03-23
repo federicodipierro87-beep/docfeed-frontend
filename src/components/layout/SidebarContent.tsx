@@ -55,14 +55,14 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-bold text-primary">DocuVault</h1>
+      <div className="flex h-14 sm:h-16 items-center border-b px-4 sm:px-6 shrink-0">
+        <h1 className="text-lg sm:text-xl font-bold text-primary">DocuVault</h1>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+      <nav className="flex-1 space-y-1 p-3 sm:p-4 overflow-y-auto min-h-0">
         {navigation.map((item) => (
           <NavLink
             key={item.name}
@@ -129,7 +129,7 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
       </nav>
 
       {/* Footer */}
-      <div className="border-t p-4">
+      <div className="border-t p-3 sm:p-4 shrink-0">
         <NavLink
           to="/settings"
           onClick={handleClick}
@@ -155,6 +155,6 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
           Esci
         </Button>
       </div>
-    </>
+    </div>
   )
 }
