@@ -98,21 +98,21 @@ export default function TrashPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-lg border bg-card">
-          <table className="w-full">
+        <div className="rounded-lg border bg-card overflow-x-auto">
+          <table className="w-full min-w-[400px]">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="py-3 px-4 text-left text-sm font-medium">Nome</th>
-                <th className="py-3 px-4 text-left text-sm font-medium hidden md:table-cell">
+                <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium">Nome</th>
+                <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium hidden md:table-cell">
                   Vault
                 </th>
-                <th className="py-3 px-4 text-left text-sm font-medium hidden lg:table-cell">
+                <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium hidden lg:table-cell">
                   Tipo
                 </th>
-                <th className="py-3 px-4 text-left text-sm font-medium">
+                <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium hidden sm:table-cell">
                   Eliminato
                 </th>
-                <th className="py-3 px-4 text-right text-sm font-medium">
+                <th className="py-3 px-3 sm:px-4 text-right text-sm font-medium">
                   Azioni
                 </th>
               </tr>
@@ -123,36 +123,38 @@ export default function TrashPage() {
                   key={doc.id}
                   className="border-b last:border-0 hover:bg-muted/50 transition-colors"
                 >
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
+                  <td className="py-3 px-3 sm:px-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                      <span className="font-medium">{doc.name}</span>
+                      <span className="font-medium truncate max-w-[120px] sm:max-w-none">{doc.name}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 hidden md:table-cell text-muted-foreground">
+                  <td className="py-3 px-3 sm:px-4 hidden md:table-cell text-muted-foreground">
                     {doc.vault?.name}
                   </td>
-                  <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground">
+                  <td className="py-3 px-3 sm:px-4 hidden lg:table-cell text-muted-foreground">
                     {getMimeTypeLabel(doc.mimeType)}
                   </td>
-                  <td className="py-3 px-4 text-muted-foreground">
+                  <td className="py-3 px-3 sm:px-4 hidden sm:table-cell text-muted-foreground">
                     {formatRelativeTime(doc.deletedAt)}
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex justify-end gap-2">
+                  <td className="py-3 px-3 sm:px-4 text-right">
+                    <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setRestoreDoc({ id: doc.id, name: doc.name })}
+                        title="Ripristina"
                       >
-                        <RotateCcw className="h-4 w-4 mr-1" />
-                        Ripristina
+                        <RotateCcw className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Ripristina</span>
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         className="text-destructive"
                         onClick={() => setDeleteDoc({ id: doc.id, name: doc.name })}
+                        title="Elimina definitivamente"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

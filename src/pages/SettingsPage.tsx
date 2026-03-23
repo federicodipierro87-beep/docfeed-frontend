@@ -29,19 +29,19 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile">
-        <TabsList>
-          <TabsTrigger value="profile">
-            <User className="h-4 w-4 mr-2" />
-            Profilo
+        <TabsList className="w-full sm:w-auto flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="profile" className="flex-1 sm:flex-none">
+            <User className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Profilo</span>
           </TabsTrigger>
-          <TabsTrigger value="security">
-            <Shield className="h-4 w-4 mr-2" />
-            Sicurezza
+          <TabsTrigger value="security" className="flex-1 sm:flex-none">
+            <Shield className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Sicurezza</span>
           </TabsTrigger>
           {user?.role === 'ADMIN' && (
-            <TabsTrigger value="license">
-              <Key className="h-4 w-4 mr-2" />
-              Licenza
+            <TabsTrigger value="license" className="flex-1 sm:flex-none">
+              <Key className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Licenza</span>
             </TabsTrigger>
           )}
         </TabsList>

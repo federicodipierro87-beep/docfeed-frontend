@@ -389,27 +389,28 @@ export default function ViewsPage() {
         </div>
 
         {executeResult.documents.length > 0 ? (
-          <div className="rounded-lg border bg-card">
-            <table className="w-full">
+          <div className="rounded-lg border bg-card overflow-x-auto">
+            <table className="w-full min-w-[400px]">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="py-3 px-4 text-left text-sm font-medium">Nome</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium hidden md:table-cell">Vault</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium hidden lg:table-cell">Dimensione</th>
-                  <th className="py-3 px-4 text-left text-sm font-medium">Modificato</th>
+                  <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium">Nome</th>
+                  <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium hidden md:table-cell">Vault</th>
+                  <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium hidden lg:table-cell">Dimensione</th>
+                  <th className="py-3 px-3 sm:px-4 text-left text-sm font-medium hidden sm:table-cell">Modificato</th>
                 </tr>
               </thead>
               <tbody>
                 {executeResult.documents.map((doc: any) => (
                   <tr key={doc.id} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="py-3 px-4">
-                      <Link to={`/documents/${doc.id}`} className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{doc.name}</p>
+                    <td className="py-3 px-3 sm:px-4">
+                      <Link to={`/documents/${doc.id}`} className="flex items-center gap-2 sm:gap-3">
+                        <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{doc.name}</p>
                           {doc.workflowState && (
                             <Badge
                               variant="outline"
+                              className="text-xs"
                               style={{
                                 borderColor: doc.workflowState.color,
                                 color: doc.workflowState.color,
@@ -421,13 +422,13 @@ export default function ViewsPage() {
                         </div>
                       </Link>
                     </td>
-                    <td className="py-3 px-4 hidden md:table-cell text-muted-foreground">
+                    <td className="py-3 px-3 sm:px-4 hidden md:table-cell text-muted-foreground">
                       {doc.vault?.name}
                     </td>
-                    <td className="py-3 px-4 hidden lg:table-cell text-muted-foreground">
+                    <td className="py-3 px-3 sm:px-4 hidden lg:table-cell text-muted-foreground">
                       {doc.currentVersion ? formatBytes(doc.currentVersion.fileSizeBytes) : '-'}
                     </td>
-                    <td className="py-3 px-4 text-muted-foreground">
+                    <td className="py-3 px-3 sm:px-4 hidden sm:table-cell text-muted-foreground">
                       {formatRelativeTime(doc.updatedAt)}
                     </td>
                   </tr>

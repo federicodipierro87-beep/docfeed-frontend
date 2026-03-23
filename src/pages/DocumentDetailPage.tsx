@@ -226,14 +226,14 @@ export default function DocumentDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className="rounded-lg bg-primary/10 p-4">
-            <FileText className="h-8 w-8 text-primary" />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="rounded-lg bg-primary/10 p-3 sm:p-4 shrink-0">
+            <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">{document.name}</h1>
-            <p className="text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{document.name}</h1>
+            <p className="text-sm text-muted-foreground">
               {document.vault?.name} • {getMimeTypeLabel(document.mimeType)}
             </p>
             {document.workflowState && (
@@ -250,7 +250,7 @@ export default function DocumentDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {document.checkedOutById ? (
             <Button
               variant="outline"
@@ -259,11 +259,11 @@ export default function DocumentDetailPage() {
               disabled={checkinMutation.isPending}
             >
               {checkinMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
               ) : (
-                <Unlock className="h-4 w-4 mr-2" />
+                <Unlock className="h-4 w-4 sm:mr-2" />
               )}
-              Check-in
+              <span className="hidden sm:inline">Check-in</span>
             </Button>
           ) : (
             <Button
@@ -273,20 +273,20 @@ export default function DocumentDetailPage() {
               disabled={checkoutMutation.isPending}
             >
               {checkoutMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
               ) : (
-                <Lock className="h-4 w-4 mr-2" />
+                <Lock className="h-4 w-4 sm:mr-2" />
               )}
-              Check-out
+              <span className="hidden sm:inline">Check-out</span>
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Download
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Download</span>
           </Button>
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Modifica
+            <Edit className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Modifica</span>
           </Button>
           <EditDocumentDialog
             open={editOpen}
@@ -340,17 +340,17 @@ export default function DocumentDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="details">
-        <TabsList>
-          <TabsTrigger value="details">Dettagli</TabsTrigger>
-          <TabsTrigger value="preview" onClick={loadPreview}>
-            <Eye className="h-4 w-4 mr-2" />
-            Anteprima
+        <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="details" className="flex-1 sm:flex-none">Dettagli</TabsTrigger>
+          <TabsTrigger value="preview" onClick={loadPreview} className="flex-1 sm:flex-none">
+            <Eye className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Anteprima</span>
           </TabsTrigger>
-          <TabsTrigger value="versions">
-            <History className="h-4 w-4 mr-2" />
-            Versioni ({versions?.length || 0})
+          <TabsTrigger value="versions" className="flex-1 sm:flex-none">
+            <History className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Versioni</span> ({versions?.length || 0})
           </TabsTrigger>
-          <TabsTrigger value="metadata">Metadata</TabsTrigger>
+          <TabsTrigger value="metadata" className="flex-1 sm:flex-none">Metadata</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preview" className="mt-6">
@@ -447,37 +447,42 @@ export default function DocumentDetailPage() {
 
         <TabsContent value="versions" className="mt-6">
           <Card>
-            <CardContent className="p-0">
-              <table className="w-full">
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full min-w-[500px]">
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="py-3 px-4 text-left text-sm font-medium">Versione</th>
-                    <th className="py-3 px-4 text-left text-sm font-medium">Creata da</th>
+                    <th className="py-3 px-4 text-left text-sm font-medium hidden sm:table-cell">Creata da</th>
                     <th className="py-3 px-4 text-left text-sm font-medium">Data</th>
-                    <th className="py-3 px-4 text-left text-sm font-medium">Dimensione</th>
-                    <th className="py-3 px-4 text-left text-sm font-medium">Commento</th>
+                    <th className="py-3 px-4 text-left text-sm font-medium hidden md:table-cell">Dimensione</th>
+                    <th className="py-3 px-4 text-left text-sm font-medium hidden lg:table-cell">Commento</th>
                     <th className="py-3 px-4"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {versions?.map((version: any) => (
                     <tr key={version.id} className="border-b last:border-0">
-                      <td className="py-3 px-4 font-medium">
-                        v{version.versionNumber}
-                        {version.id === document.currentVersion?.id && (
-                          <span className="ml-2 text-xs text-primary">(corrente)</span>
-                        )}
+                      <td className="py-3 px-4">
+                        <div className="font-medium">
+                          v{version.versionNumber}
+                          {version.id === document.currentVersion?.id && (
+                            <span className="ml-2 text-xs text-primary">(corrente)</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground sm:hidden">
+                          {version.createdBy?.firstName} {version.createdBy?.lastName}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">
+                      <td className="py-3 px-4 text-muted-foreground hidden sm:table-cell">
                         {version.createdBy?.firstName} {version.createdBy?.lastName}
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">
+                      <td className="py-3 px-4 text-muted-foreground text-sm">
                         {formatDateTime(version.createdAt)}
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">
+                      <td className="py-3 px-4 text-muted-foreground hidden md:table-cell">
                         {formatBytes(version.fileSizeBytes)}
                       </td>
-                      <td className="py-3 px-4 text-muted-foreground">
+                      <td className="py-3 px-4 text-muted-foreground hidden lg:table-cell">
                         {version.comment || '-'}
                       </td>
                       <td className="py-3 px-4">
