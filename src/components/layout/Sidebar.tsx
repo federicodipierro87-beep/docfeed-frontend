@@ -2,8 +2,8 @@ import SidebarContent from './SidebarContent'
 
 export default function Sidebar() {
   return (
-    <div className="hidden md:flex w-64 flex-col border-r bg-sidebar h-full overflow-y-auto overflow-x-hidden shrink-0">
+    <aside className="hidden md:flex md:w-64 md:flex-col border-r bg-sidebar">
       <SidebarContent />
-    </div>
+    </aside>
   )
 }

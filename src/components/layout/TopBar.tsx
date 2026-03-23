@@ -31,12 +31,12 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   }
 
   return (
-    <header className="flex h-14 sm:h-16 items-center justify-between border-b bg-header px-3 sm:px-4 md:px-6 gap-2 sm:gap-4 shrink-0">
+    <header className="h-14 md:h-16 flex items-center justify-between border-b bg-header px-3 md:px-6 gap-3">
       {/* Mobile menu button */}
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden shrink-0"
+        className="md:hidden flex-shrink-0"
         onClick={onMenuClick}
       >
         <Menu className="h-5 w-5" />
@@ -57,7 +57,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
       </form>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 md:gap-4 shrink-0">
+      <div className="flex items-center gap-1 md:gap-3 flex-shrink-0">
         {/* Notifications */}
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />

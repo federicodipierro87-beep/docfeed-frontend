@@ -57,12 +57,12 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex h-14 sm:h-16 items-center border-b px-4 sm:px-6 shrink-0">
-        <h1 className="text-lg sm:text-xl font-bold text-primary">DocuVault</h1>
+      <div className="h-14 md:h-16 flex items-center border-b px-4 md:px-6 flex-shrink-0">
+        <h1 className="text-xl font-bold text-primary">DocuVault</h1>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-3 sm:p-4 overflow-y-auto min-h-0">
+      {/* Navigation - scrollable */}
+      <nav className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1">
         {navigation.map((item) => (
           <NavLink
             key={item.name}
@@ -77,7 +77,7 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
               )
             }
           >
-            <item.icon className="h-5 w-5" />
+            <item.icon className="h-5 w-5 flex-shrink-0" />
             {item.name}
           </NavLink>
         ))}
@@ -102,7 +102,7 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
                   )
                 }
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-5 w-5 flex-shrink-0" />
                 {item.name}
               </NavLink>
             ))}
@@ -120,7 +120,7 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
                   )
                 }
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-5 w-5 flex-shrink-0" />
                 {item.name}
               </NavLink>
             ))}
@@ -129,7 +129,7 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
       </nav>
 
       {/* Footer */}
-      <div className="border-t p-3 sm:p-4 shrink-0">
+      <div className="border-t p-3 md:p-4 flex-shrink-0">
         <NavLink
           to="/settings"
           onClick={handleClick}
@@ -142,7 +142,7 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
             )
           }
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-5 w-5 flex-shrink-0" />
           Impostazioni
         </NavLink>
 
@@ -151,7 +151,7 @@ export default function SidebarContent({ onNavigate }: SidebarContentProps) {
           className="mt-2 w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
           onClick={() => logout()}
         >
-          <LogOut className="h-5 w-5" />
+          <LogOut className="h-5 w-5 flex-shrink-0" />
           Esci
         </Button>
       </div>

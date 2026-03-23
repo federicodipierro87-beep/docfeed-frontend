@@ -76,36 +76,30 @@
   * {
     @apply border-border;
   }
-  html, body, #root {
-    @apply h-full;
+  html {
+    height: 100%;
   }
   body {
     @apply bg-background text-foreground;
-    /* Prevent overscroll/bounce on mobile */
-    overscroll-behavior: none;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
-}
-
-/* Support for dvh (dynamic viewport height) on mobile */
-@supports (height: 100dvh) {
-  html, body, #root {
-    height: 100dvh;
+  #root {
+    height: 100%;
+    overflow: hidden;
   }
-}
-
-/* Safe area padding for mobile devices with notch */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* Scrollbar personalizzata */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {

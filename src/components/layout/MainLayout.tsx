@@ -9,7 +9,7 @@ export default function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
+    <div className="h-full flex bg-background">
       {/* Desktop Sidebar */}
       <Sidebar />
 
@@ -20,14 +20,14 @@ export default function MainLayout() {
         </SheetContent>
       </Sheet>
 
-      {/* Main content */}
-      <div className="flex flex-1 flex-col min-h-0 min-w-0">
-        {/* Top bar */}
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar - fixed height */}
         <TopBar onMenuClick={() => setMobileMenuOpen(true)} />
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
-          <div className="pb-safe">
+        {/* Page content - scrollable */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 md:p-6">
             <Outlet />
           </div>
         </main>
